@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 
+*.egg-info
+build/
+dist/
+
+# Data & Results
+# data/
+# results/`
+
+# vscode settings
+.vscode
+.pypirc
+
+# MAC garbage
+.DS_Store
