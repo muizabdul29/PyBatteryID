@@ -11,3 +11,4 @@ pip install pybatteryid
 ```
 
 ## License
+PyBatteryID is an open-source library licensed under the BSD-3-Clause license. For more information, see [LICENSE](LICENSE.txt).
