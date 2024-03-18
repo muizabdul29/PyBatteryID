@@ -35,6 +35,7 @@ class BasisFunction:
     variable: str
     operation: Any
     arguments: list[Any]
+    function_string: str
 
 @dataclass
 class Signal:

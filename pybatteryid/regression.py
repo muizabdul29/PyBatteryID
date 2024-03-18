@@ -1,4 +1,4 @@
-"""abc"""
+"""Utilities regarding regression."""
 
 import numpy as np
 
@@ -31,7 +31,7 @@ def setup_regression(io_trajectories: dict, p_trajectories: dict, h_trajectories
                 h_trajectory = h_trajectories[basis_key + delay]
                 phi.append( np.prod([trajectory, h_trajectory], axis=0) )
 
-                combined_key = key + "*" + basis_key + delay
+                combined_key = key + "×" + basis_key + delay
                 column_labels.append( combined_key )
         else:
             for basis_key in basis_function_keys:
@@ -39,10 +39,17 @@ def setup_regression(io_trajectories: dict, p_trajectories: dict, h_trajectories
                 p_trajectories_list = [ p_trajectories[term + delay] for term in basis_key ]
                 phi.append( np.prod([trajectory, *p_trajectories_list], axis=0) )
 
-                combined_key = key + "*" + "*".join([ term + delay for term in basis_key ])
+                combined_key = key + "×" + "×".join([ term + delay for term in basis_key ])
                 column_labels.append( combined_key )
     #
-    return np.array(phi).T, np.array(column_labels)
+    phi = np.array(phi).T
+    #
+    rich_print(Panel(("Inverse condition number of regression matrix: "
+                      f"{1 / np.linalg.cond(phi)}"
+                      "\nDimensions of regression matrix: "
+                      f"({phi.shape[0]} rows, {phi.shape[1]} columns)")))
+    #
+    return phi, np.array(column_labels)
 
 def run_optimizer(regression_matrix: np.ndarray, output_vector: np.ndarray, optimizer: str):
     """Run an optimization routine for a regression problem to

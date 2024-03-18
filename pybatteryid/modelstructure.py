@@ -2,20 +2,21 @@
 Contains the class `ModelStructure`.
 """
 
-from typing import Literal, Any
+from typing import Literal
 
 import numpy as np
 
-from .voltagefunction import load_voltage_model
+from .voltage import load_voltage_model
 from .basisfunctions import extract_basis_functions, combine_symbols, \
     generate_signals, generate_basis_functions, generate_signal_trajectories
 from .regression import setup_regression, run_optimizer
 from .dataclasses import VoltageFunction, BasisFunction, Model, Signal
+from .typeddicts import VoltageSocData, CurrentVoltageData
 
 class ModelStructure:
     """This class allows battery model identification and simulation employing
-    the proposed model structure in the linear parameter-varying (LPV) framework
-    using input-output (IO) representation.
+    the proposed model structure using the input-output (IO) representation in
+    the linear parameter-varying (LPV) framework.
 
     Attributes
     ----------
@@ -43,16 +44,16 @@ class ModelStructure:
         self._basis_functions = []
         self._hysteresis_basis_functions = []
 
-        self.models = []
-
-    def add_emf_function(self, soc_values: list[float], voltage_values: list[float]):
+    def add_emf_function(self, voltage_soc_data: VoltageSocData):
         """Add EMF function used to decompose battery voltage into
         overpotentials and vice versa."""
-        self._emf_function = load_voltage_model(soc_values, voltage_values)
+        self._emf_function = load_voltage_model(voltage_soc_data['soc_values'],
+                                                voltage_soc_data['voltage_values'])
 
-    def add_hysteresis_function(self, soc_values: list[float], voltage_values: list[float]):
+    def add_hysteresis_function(self, voltage_soc_data: VoltageSocData):
         """Add hysteresis function to be used as second model input."""
-        self._hysteresis_function = load_voltage_model(soc_values, voltage_values)
+        self._hysteresis_function = load_voltage_model(voltage_soc_data['soc_values'],
+                                                       voltage_soc_data['voltage_values'])
 
     def add_basis_functions(self, basis_function_strings: list[str],
                             hysteresis_basis_function_strings: list[str] | None = None):
@@ -64,13 +65,15 @@ class ModelStructure:
             self._hysteresis_basis_functions = extract_basis_functions(hbfs)
 
     # pylint: disable=too-many-locals
-    def simulate(self, model: Model, dataset: dict, initial_soc: float,
-                 no_of_initial_values: int | None = None):
+    def simulate(self, model: Model, dataset: CurrentVoltageData, initial_soc: float):
         """Simulate the battery voltage using the provided model
         with the battery current as input."""
         #
-        if no_of_initial_values is None:
-            no_of_initial_values = model.model_order
+        no_of_initial_values = len(dataset['voltage_values'])
+        # Check if minimum number of initial values are provided.
+        if no_of_initial_values < model.model_order:
+            raise ValueError(f'At least {model.model_order} initial voltage value(s)'
+                             ' should be provided.')
         #
         signals = generate_signals(dataset, self._emf_function, self._hysteresis_function,
                                    initial_soc, self.sampling_period, self.battery_capacity)
@@ -82,6 +85,9 @@ class ModelStructure:
         io_signals = [ signals.find('v'), signals.find('i') ]
         if self._hysteresis_function is not None:
             io_signals.append( signals.find('h') )
+        #
+        io_signals[0].trajectory.extend([np.nan] *
+                                        (len(dataset['current_values']) - no_of_initial_values))
         #
         signal_tuple = io_signals, basis_functions.signals, hysteresis_basis_functions.signals
         signal_trajectories = generate_signal_trajectories(signal_tuple, model.model_order,
@@ -97,20 +103,20 @@ class ModelStructure:
             #
             combined_trajectories_dict[key] = [simulated_voltage.trajectory[-delay]]
 
-        for k in range( len(signals.find('i').trajectory) - no_of_initial_values ):
+        for k in range(len(signals.find('i').trajectory) - no_of_initial_values):
             #
             phi = []
             for key in model.model_terms:
                 # Replace v with v_sim in the symbols
                 new_symbols = []
-                for sym in key.split('*'):
+                for sym in key.split('×'):
                     sym_parts = sym.split('(')
                     if sym_parts[0] == 'v':
                         new_symbols.append(simulated_voltage.symbol + '(' + sym_parts[1])
                     else:
                         new_symbols.append(sym)
                 # The value corresponding to each column for kth time instant.
-                term_value = np.prod([ combined_trajectories_dict[sym][k] for sym in new_symbols ])
+                term_value = np.prod([combined_trajectories_dict[sym][k] for sym in new_symbols])
                 phi.append(term_value)
 
             # Newly calculated voltage value at kth time instant.
@@ -126,7 +132,7 @@ class ModelStructure:
         return np.add(emf_trajectory, simulated_voltage.trajectory)
 
     # pylint: disable=too-many-arguments
-    def identify(self, dataset: dict[Literal['current', 'voltage'], Any], initial_soc: float,
+    def identify(self, dataset: CurrentVoltageData, initial_soc: float,
                  model_order: int, nonlinearity_order: int, optimizers: Literal['lasso', 'ridge']):
         """Identify a battery model using the provided identification
         dataset along with the desired model order and basis-function
