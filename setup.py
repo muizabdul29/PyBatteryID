@@ -7,8 +7,8 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name='pybatteryid',
-    version='1.0.1',
-    author='Muiz',
+    version='1.1.0',
+    author='Muiz Sheikh',
     description='Data-driven Battery Model Identification in Python',
     long_description=readme,
     long_description_content_type='text/markdown',

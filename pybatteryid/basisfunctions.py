@@ -1,21 +1,23 @@
-"""abc"""
+"""Utilities concerning basis functions."""
 
 import re
 import math as m
 from enum import Enum
-from typing import Callable, Tuple, Any
+from typing import Tuple, Any
 from itertools import combinations_with_replacement
 
 import numpy as np
 from .dataclasses import BasisFunction, Signal, SignalVector, VoltageFunction
+from .typeddicts import CurrentVoltageData
 
 class Operation(Enum):
     """List of allowed operations."""
     NONE = 0
     INVERSE = 1
     LOGARITHM = 2
-    EXP_SQRT = 3
-    LOWPASS = 4
+    LOWPASS = 3
+    EXP_SQRT_ABS = 4
+    EXP_POWER_ABS = 5
 
 def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunction]:
     """Extract basis functions from a list of strings by recognizing
@@ -24,46 +26,67 @@ def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunc
     # We define tuples for various operations in the format
     # (regex, indices for variable and arguments, operation).
     identifiers = [
-        (r"^(s|i|d|v)$", [0], Operation.NONE),
-        (r"^(s|i|d|v)⁻¹$", [0], Operation.INVERSE),
-        (r"^log\[(s|d|i|v)\]$", [0], Operation.LOGARITHM),
-        (r"^exp\[(([0-9]*[.])?[0-9]+)sqrt\[\|(s|d|i|v)\|\]\]$", [2, 0], Operation.EXP_SQRT),
-        (r"^(s|i|d|v)\[(([0-9]*[.])?[0-9]+),(([0-9]*[.])?[0-9]+)\]$", [0, 1, 3], Operation.LOWPASS)
+        (r"^(s|i|d|v|T)$", [0], Operation.NONE),
+        (r"^1/(s|d|i|v|T)$", [0], Operation.INVERSE),
+        (r"^log\[(s|d|i|v|T)\]$", [0], Operation.LOGARITHM),
+        (r"^exp\[(((\+|-)?([0-9]*[.])?[0-9]+)\*)?(sqrt)\[(\|)?"
+         r"(((\+|-)?([0-9]*[.])?[0-9]+)\*)?(s|d|i|v|T)([+-](([0-9]*[.])?[0-9]+))?"
+         r"(\|)?\]\]$", [10, 1, 7, 11, 5, 14, 4], Operation.EXP_SQRT_ABS),
+        (r"^exp\[(((\+|-)?([0-9]*[.])?[0-9]+)\*)?"
+         r"\[(\|)?(((\+|-)?([0-9]*[.])?[0-9]+)\*)?(s|d|i|v|T)([+-](([0-9]*[.])?[0-9]+))?(\|)?\]"
+         r"(\^(([0-9]*[.])?[0-9]+))?\]$", [9, 1, 6, 10, 4, 13, 15], Operation.EXP_POWER_ABS),
+        (r"^(s|i|d|v|T)\[(([0-9]*[.])?[0-9]+),"
+         r"(([0-9]*[.])?[0-9]+)\]$", [0, 1, 3], Operation.LOWPASS)
     ]
     #
-    for function_string in basis_function_strings:
+    for i, function_string in enumerate(basis_function_strings):
         for identifier, indices, operation in identifiers:
             #
             result = re.findall(identifier, function_string.strip())
             if len(result) > 0:
                 result = result[0] if isinstance(result[0], tuple) else result
                 args = [ result[i] for i in indices[1:] ]
-                basis_functions.append( BasisFunction(result[indices[0]], operation, args) )
+                basis_functions.append(BasisFunction(result[indices[0]], operation, args,
+                                                     function_string))
                 break
+        if len(basis_functions) == i:
+            raise ValueError(f"Could not recognize expression: {function_string}")
     return basis_functions
 
-def create_functional_variant(signal: Signal, sym_func: str, equation: Callable):
-    """Create functional variants of the given signals."""
-    new_symbol = sym_func
-    new_trajectory = [equation(x) for x in signal.trajectory]
-
-    return Signal(new_symbol, new_trajectory, lambda x: x)
-
-def perform_signal_operation(signal: Signal, operation: Operation, args: list[Any]) -> Signal:
+def perform_signal_operation(signal: Signal, operation: Operation, args: list[Any],
+                             function_string: str) -> Signal:
     """Perform an operation on a signal."""
     result_signal = signal
     if operation == Operation.INVERSE:
-        result_signal = create_functional_variant(signal, f'{signal.symbol}⁻¹', lambda x: 1 / x)
+        result_signal = Signal(function_string,
+                               [1 / x for x in signal.trajectory],
+                               lambda x: 1 / x)
     elif operation == Operation.LOGARITHM:
-        result_signal = create_functional_variant(signal, f'log[{signal.symbol}]', m.log)
-    elif operation == Operation.EXP_SQRT:
-        gamma = float( args[0] )
-        result_signal = create_functional_variant(signal, f'exp[{args[0]}sqrt[|{signal.symbol}|]]',
-                                                  lambda x: m.exp(gamma * m.sqrt(abs(x) )))
+        result_signal = Signal(function_string,
+                               [m.log(x) for x in signal.trajectory],
+                               m.log)
+    elif operation in (Operation.EXP_SQRT_ABS, Operation.EXP_POWER_ABS):
+        def equation(x):
+            gamma_1 = float(args[0]) if args[0] != '' else 1
+            gamma_2 = float(args[1]) if args[1] != '' else 1
+            gamma_3 = float(args[2]) if args[2] != '' else 0
+            result = gamma_2 * x + gamma_3
+            if args[3] == '|' and args[4] == '|':
+                result = abs(result)
+            if args[5] == 'sqrt':
+                result = m.sqrt(result)
+            else:
+                exponent = float(args[5]) if args[5] != '' else 1
+                result = result**exponent
+            return m.exp(gamma_1 * result)
+        #
+        result_signal = Signal(function_string,
+                               [equation(x) for x in signal.trajectory],
+                               equation)
     elif operation == Operation.LOWPASS:
         epsilon = lambda d: float(args[1]) if d == 0 else float(args[0]) # pylint: disable=C3001
         #
-        result_signal = Signal(f'{signal.symbol}[{args[0]},{args[1]}]', [signal.trajectory[0]],
+        result_signal = Signal(function_string, [signal.trajectory[0]],
                                lambda past_value, d: epsilon(d) * past_value + (1 - epsilon(d)) * d,
                                equation_order=1)
         # Update the trajectory
@@ -85,7 +108,7 @@ def combine_symbols(symbols: list[str], nl_order: int):
         return [ k[0] == 'd' for k in key ].count(True) > 1
     # 2. If a key has `s` and its inverse.
     def s_and_inverse_s(key):
-        return 's' in key and 's⁻¹' in key
+        return 's' in key and '1/s' in key
     # We combine the above two conditions
     def check_allowed(key):
         return not more_than_one_delta(key) and not s_and_inverse_s(key)
@@ -94,33 +117,37 @@ def combine_symbols(symbols: list[str], nl_order: int):
     final_combinations = filter( check_allowed, combinations )
     return list(final_combinations)
 
-# pylint: disable=too-many-arguments
-def generate_signals(dataset: dict, emf_function: VoltageFunction,
+# pylint: disable=too-many-arguments, too-many-locals
+def generate_signals(dataset: CurrentVoltageData, emf_function: VoltageFunction,
                      hysteresis_function: VoltageFunction | None, initial_soc: float,
                      sampling_period: float, battery_capacity: float):
     """Generate basic signals, that is, SOC, current, voltage,
     current direction, and hysteresis function using
     the `Signal` class."""
-    # First, we generate input--output signal trajectories
-    # 1. SOC trajectory
+    # 1. Current signal
+    current = Signal('i', dataset['current_values'].tolist(), lambda x: x)
+    # 3. SOC trajectory possibly dependent on temperature
     soc = Signal('s', [initial_soc],
-                    lambda soc, current, delta_t, capacity: soc + delta_t / capacity * current,
-                    equation_order=1)
+                 lambda soc, current, delta_t, capacity: soc + delta_t / capacity * current,
+                 equation_order=1)
     # Update the trajectory
-    for current in dataset['current'][:-1]:
-        soc.update_trajectory(current, sampling_period, battery_capacity)
-    # 2. Current trajectory
-    current = Signal('i', dataset['current'], lambda x: x)
-    # 3. Overpotential trajectory
-    emf_trajectory = emf_function(soc.trajectory)
-    overpotential = Signal('v', (dataset['voltage'] - emf_trajectory).tolist(), lambda x: x)
-    # 4. Basic current-direction trajectory
-    current_direction =  Signal('d', np.sign(current.trajectory).tolist(), lambda x: x)
+    for c in current.trajectory[:-1]:
+        soc.update_trajectory(c, sampling_period, battery_capacity)
+    # 4. Overpotential signal
+    # Use EMF trajectory to determine overpotentials.
+    emf_trajectory = []
+    for s in soc.trajectory[:len(dataset['voltage_values'])]:
+        emf_trajectory.append(emf_function(s))
+    #
+    overpotential = Signal('v', (dataset['voltage_values'] - emf_trajectory).tolist(), lambda x: x)
+    # 5. Basic current-direction trajectory
+    current_direction =  Signal('d', np.sign(np.array(current.trajectory)).tolist(), lambda x: x)
     #
     signals = SignalVector([ soc, current, overpotential, current_direction ])
-    # 5. Hysteresis-input
+    #
     if hysteresis_function is not None:
-        hysteresis_input = Signal('h', hysteresis_function(soc.trajectory),
+        # 5. Hysteresis-input
+        hysteresis_input = Signal('h', [hysteresis_function(s) for s in soc.trajectory],
                                   lambda x: x, equation_order=0)
         signals.add(hysteresis_input)
     #
@@ -137,7 +164,8 @@ def generate_basis_functions(basis_functions: list[BasisFunction], signals: Sign
             raise ValueError('Symbol not recognized.')
         #
         basis_function_signal = perform_signal_operation(basic_signal, basis_function.operation,
-                                                            basis_function.arguments)
+                                                         basis_function.arguments,
+                                                         basis_function.function_string)
         basis_function_signals.append( basis_function_signal )
     #
     return SignalVector(basis_function_signals)
