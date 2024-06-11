@@ -138,6 +138,10 @@ def generate_signals(dataset: CurrentVoltageData, emf_function: VoltageFunction,
     emf_trajectory = []
     for s in soc.trajectory[:len(dataset['voltage_values'])]:
         emf_trajectory.append(emf_function(s))
+    # Check for nan in the EMF trajectory
+    if np.isnan(emf_trajectory).any():
+        raise ValueError("Invalid EMF value(s). Possibly out-of-bound SOC input value for "
+                         "the EMF function. Note that extrapolation is not allowed.")
     #
     overpotential = Signal('v', (dataset['voltage_values'] - emf_trajectory).tolist(), lambda x: x)
     # 5. Basic current-direction trajectory

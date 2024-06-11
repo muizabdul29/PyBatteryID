@@ -26,8 +26,8 @@ class Model:
     """Represents a battery model."""
     model_order: int
     nonlinearity_order: int
-    model_terms: np.ndarray
-    model_estimate: np.ndarray
+    model_terms: np.ndarray[Any, Any]
+    model_estimate: np.ndarray[Any, Any]
 
 @dataclass
 class BasisFunction:
