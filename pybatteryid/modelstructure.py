@@ -171,7 +171,7 @@ class ModelStructure:
             #
             model_estimate = run_optimizer(regression_matrix, output_vector, optimizer)
             #
-            if optimizer == 'lasso':
+            if 'lasso' in optimizer:
                 selected_regressors = np.abs(model_estimate) > 1e-5
                 regression_matrix = regression_matrix[:, selected_regressors] # type: ignore
                 regressor_labels = np.array(regressor_labels)[selected_regressors]
