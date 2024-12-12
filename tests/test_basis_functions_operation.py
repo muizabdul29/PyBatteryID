@@ -74,7 +74,7 @@ def test_exp_sqrt_abs_operation(scheduling_signals: SignalVector):
 def test_exp_pow_abs_operation(scheduling_signals: SignalVector):
     """Exponential arbitrary power operation."""
 
-    T = scheduling_signals.find('T')
+    T = scheduling_signals.find('T') # pylint: disable=C0103
     i = scheduling_signals.find('i')
     #
     strings = ['exp[[0.00366*T+1]^-1]', 'exp[-2.759*[|-1.5*i+1890|]^+2.89]']

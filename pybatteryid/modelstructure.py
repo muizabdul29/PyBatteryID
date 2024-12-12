@@ -180,7 +180,7 @@ class ModelStructure:
         return regression_problems, regressor_labels
 
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, R0917
     def identify(self, datasets: list[CurrentVoltageData] | CurrentVoltageData,
                  model_order: int, nonlinearity_order: int,
                  optimizers: Literal['lasso.cvxopt', 'lasso.sklearn', 'ridge.sklearn'],

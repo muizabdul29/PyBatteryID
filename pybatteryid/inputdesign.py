@@ -27,7 +27,7 @@ def generate_rectangular_pulse_train(pulse_periods):
     return pulse_train
 
 
-# pylint: disable=too-many-locals, too-many-arguments
+# pylint: disable=too-many-locals, too-many-arguments, R0917
 def generate_current_profile(mean_pulse_period: float,
                              std_pulse_period: float,
                              mean_rest_period: float,

@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 
 
-# pylint: disable=too-many-locals, too-many-arguments
+# pylint: disable=too-many-locals, too-many-arguments, R0917
 def plot_custom(x_y_data_tuples: list[Tuple], figsize: Tuple[int, int]=(10, 3),
                 xlabel: str='x', ylabel: str='y', legends: list[str]|None=None,
                 linestyles: list[str]|None=None, xaxis_reverse: bool=False,
@@ -58,6 +58,7 @@ def plot_custom(x_y_data_tuples: list[Tuple], figsize: Tuple[int, int]=(10, 3),
     plt.show()
 
 
+# pylint: disable=R0917
 def plot_time_vs_voltage(time_voltage_data_tuples: list[Tuple], figsize: Tuple[int, int]=(6, 2),
                          legends: list[str]|None=None, linestyles: list[str]|None=None,
                          linewidth: float|None=None, units: Tuple[str, str]=('sec', 'V'),
@@ -70,6 +71,7 @@ def plot_time_vs_voltage(time_voltage_data_tuples: list[Tuple], figsize: Tuple[i
         linewidth=linewidth, xlims=xlims, ylims=ylims, colors=colors)
 
 
+# pylint: disable=R0917
 def plot_time_vs_current(time_current_data_tuples: list[Tuple], figsize: Tuple[int, int]=(6, 2),
                          legends: list[str]|None=None, linestyles: list[str]|None=None,
                          linewidth: float|None=None, units: Tuple[str, str]=('sec', 'A'),
@@ -82,6 +84,7 @@ def plot_time_vs_current(time_current_data_tuples: list[Tuple], figsize: Tuple[i
                 ylims=ylims, xlims=xlims, linewidth=linewidth, colors=colors)
 
 
+# pylint: disable=R0917
 def plot_time_vs_temperature(time_temperature_data_tuples: list[Tuple],
                              figsize: Tuple[int, int]=(6, 2), legends: list[str]|None=None,
                              linestyles: list[str]|None=None, linewidth: float|None=None,

@@ -1,5 +1,6 @@
 """Setup for the PyBatteryID package"""
 
+# pylint: disable=E0401
 from setuptools import setup, find_packages
 
 with open("README.md", encoding="utf-8") as f:

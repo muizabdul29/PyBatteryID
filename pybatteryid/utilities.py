@@ -9,7 +9,7 @@ import numpy as np
 
 from scipy.integrate import trapezoid
 from scipy.optimize import minimize_scalar
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull # pylint: disable=E0611
 from rich.jupyter import print as rich_print
 from rich.table import Table
 
@@ -19,6 +19,7 @@ from .basisfunctions import generate_signals
 from .plotter import plot_custom
 
 
+# pylint: disable=too-many-locals
 def analyze_temperature_soc_space(datasets: list[CurrentVoltageData], battery_capacity: float,
                                   sampling_period: float, emf_function: VoltageFunction,
                                   hysteresis_function: VoltageFunction | None = None):
@@ -58,6 +59,7 @@ def invert_voltage_function(voltage_function: VoltageFunction, voltage: float,
     return minimize_scalar(_function, bounds=(0, 1)).x
 
 
+# pylint: disable=too-many-locals, too-many-arguments, R0917
 def analyze_dataset(dataset: CurrentVoltageData, battery_capacity: float,
                     sampling_period: float, emf_function: VoltageFunction,
                     hysteresis_function: VoltageFunction | None = None,
