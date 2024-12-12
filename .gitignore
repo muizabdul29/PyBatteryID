@@ -10,11 +10,18 @@ dist/
 
 # Data & Results
 # data/
-# results/`
+# results/
 
 # vscode settings
 .vscode
 .pypirc
+.idea
+
+# Virtual environments
+.venv
+
+# 
+.pytest_cache
 
 # MAC garbage
 .DS_Store

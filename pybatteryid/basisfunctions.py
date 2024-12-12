@@ -10,6 +10,7 @@ import numpy as np
 from .dataclasses import BasisFunction, Signal, SignalVector, VoltageFunction
 from .typeddicts import CurrentVoltageData
 
+
 class Operation(Enum):
     """List of allowed operations."""
     NONE = 0
@@ -18,6 +19,7 @@ class Operation(Enum):
     LOWPASS = 3
     EXP_SQRT_ABS = 4
     EXP_POWER_ABS = 5
+
 
 def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunction]:
     """Extract basis functions from a list of strings by recognizing
@@ -34,7 +36,7 @@ def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunc
          r"(\|)?\]\]$", [10, 1, 7, 11, 5, 14, 4], Operation.EXP_SQRT_ABS),
         (r"^exp\[(((\+|-)?([0-9]*[.])?[0-9]+)\*)?"
          r"\[(\|)?(((\+|-)?([0-9]*[.])?[0-9]+)\*)?(s|d|i|v|T)([+-](([0-9]*[.])?[0-9]+))?(\|)?\]"
-         r"(\^(([0-9]*[.])?[0-9]+))?\]$", [9, 1, 6, 10, 4, 13, 15], Operation.EXP_POWER_ABS),
+         r"(\^((\+|-)?([0-9]*[.])?[0-9]+))?\]$", [9, 1, 6, 10, 4, 13, 15], Operation.EXP_POWER_ABS),
         (r"^(s|i|d|v|T)\[(([0-9]*[.])?[0-9]+),"
          r"(([0-9]*[.])?[0-9]+)\]$", [0, 1, 3], Operation.LOWPASS)
     ]
@@ -52,6 +54,7 @@ def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunc
         if len(basis_functions) == i:
             raise ValueError(f"Could not recognize expression: {function_string}")
     return basis_functions
+
 
 def perform_signal_operation(signal: Signal, operation: Operation, args: list[Any],
                              function_string: str) -> Signal:
@@ -95,6 +98,7 @@ def perform_signal_operation(signal: Signal, operation: Operation, args: list[An
 
     return result_signal
 
+
 def combine_symbols(symbols: list[str], nl_order: int):
     """Use symbols to generate higher-order combinations."""
     #
@@ -117,37 +121,39 @@ def combine_symbols(symbols: list[str], nl_order: int):
     final_combinations = filter( check_allowed, combinations )
     return list(final_combinations)
 
-# pylint: disable=too-many-arguments, too-many-locals
-def generate_signals(dataset: CurrentVoltageData, emf_function: VoltageFunction,
-                     hysteresis_function: VoltageFunction | None, initial_soc: float,
-                     sampling_period: float, battery_capacity: float):
+
+# pylint: disable=too-many-locals
+def generate_signals(dataset: CurrentVoltageData, battery_capacity: float, sampling_period: float,
+                     emf_function: VoltageFunction, hysteresis_function: VoltageFunction | None):
     """Generate basic signals, that is, SOC, current, voltage,
     current direction, and hysteresis function using
     the `Signal` class."""
     # 1. Current signal
     current = Signal('i', dataset['current_values'].tolist(), lambda x: x)
+    # 2. Temperature signal (if provided)
+    temperature = Signal('T', dataset['temperature_values'].tolist(),
+                         lambda x: x) if 'temperature_values' in dataset else None
     # 3. SOC trajectory possibly dependent on temperature
-    soc = Signal('s', [initial_soc],
+    soc = Signal('s', [dataset['initial_soc']],
                  lambda soc, current, delta_t, capacity: soc + delta_t / capacity * current,
                  equation_order=1)
     # Update the trajectory
     for c in current.trajectory[:-1]:
         soc.update_trajectory(c, sampling_period, battery_capacity)
-    # 4. Overpotential signal
-    # Use EMF trajectory to determine overpotentials.
+    # 4. Overpotential signal -- Use EMF trajectory to determine overpotentials.
     emf_trajectory = []
-    for s in soc.trajectory[:len(dataset['voltage_values'])]:
-        emf_trajectory.append(emf_function(s))
-    # Check for nan in the EMF trajectory
-    if np.isnan(emf_trajectory).any():
-        raise ValueError("Invalid EMF value(s). Possibly out-of-bound SOC input value for "
-                         "the EMF function. Note that extrapolation is not allowed.")
+    for i, s in enumerate(soc.trajectory[:len(dataset['voltage_values'])]):
+        t = temperature.trajectory[i] if temperature is not None else None
+        emf_trajectory.append(emf_function(s, t))
     #
     overpotential = Signal('v', (dataset['voltage_values'] - emf_trajectory).tolist(), lambda x: x)
     # 5. Basic current-direction trajectory
     current_direction =  Signal('d', np.sign(np.array(current.trajectory)).tolist(), lambda x: x)
     #
     signals = SignalVector([ soc, current, overpotential, current_direction ])
+    #
+    if temperature is not None:
+        signals.add(temperature)
     #
     if hysteresis_function is not None:
         # 5. Hysteresis-input
@@ -156,6 +162,7 @@ def generate_signals(dataset: CurrentVoltageData, emf_function: VoltageFunction,
         signals.add(hysteresis_input)
     #
     return signals
+
 
 def generate_basis_functions(basis_functions: list[BasisFunction], signals: SignalVector):
     """Generate basis functions using `Signal` class."""
@@ -170,9 +177,10 @@ def generate_basis_functions(basis_functions: list[BasisFunction], signals: Sign
         basis_function_signal = perform_signal_operation(basic_signal, basis_function.operation,
                                                          basis_function.arguments,
                                                          basis_function.function_string)
-        basis_function_signals.append( basis_function_signal )
+        basis_function_signals.append(basis_function_signal)
     #
     return SignalVector(basis_function_signals)
+
 
 def generate_io_trajectories(io_signal_vector: list[Signal], time_delays, model_order):
     """Generate a dictionary of input-output signal trajectories
@@ -186,6 +194,7 @@ def generate_io_trajectories(io_signal_vector: list[Signal], time_delays, model_
     #
     return io_trajectories_dict
 
+
 def generate_basis_trajectories(basis_functions: list[Signal], time_delays, model_order):
     """Generate a dictionary of basis-function trajectories
     including their delayed versions."""
@@ -198,6 +207,7 @@ def generate_basis_trajectories(basis_functions: list[Signal], time_delays, mode
             p_trajectories_dict[key] = signal.trajectory[indices[0]:indices[-1]]
     #
     return p_trajectories_dict
+
 
 def generate_signal_trajectories(signals: Tuple[list[Signal], ...], model_order: int,
                                  no_of_initial_values: int):
@@ -213,8 +223,8 @@ def generate_signal_trajectories(signals: Tuple[list[Signal], ...], model_order:
     io_trajectories_dict = generate_io_trajectories(io_signals,
                                                     time_delays, no_of_initial_values)
     p_trajectories_dict = generate_basis_trajectories(basis_function_signals,
-                                                        time_delays, no_of_initial_values)
+                                                      time_delays, no_of_initial_values)
     h_trajectories_dict = generate_basis_trajectories(hysteresis_basis_function_signals,
-                                                        time_delays, no_of_initial_values)
+                                                      time_delays, no_of_initial_values)
     #
     return io_trajectories_dict, p_trajectories_dict, h_trajectories_dict

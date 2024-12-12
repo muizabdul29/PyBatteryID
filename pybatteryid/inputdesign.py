@@ -3,7 +3,9 @@ Contains utilities to generate current and temperature
 profiles for model identification.
 """
 
+
 import numpy as np
+
 
 def generate_rectangular_pulse_train(pulse_periods):
     """Generate a rectangular pulse train."""
@@ -23,6 +25,7 @@ def generate_rectangular_pulse_train(pulse_periods):
     pulse_train = -2 * (np.sum(rectangular_shape, axis=0 ) - 0.5)
 
     return pulse_train
+
 
 # pylint: disable=too-many-locals, too-many-arguments
 def generate_current_profile(mean_pulse_period: float,
@@ -113,3 +116,36 @@ def generate_current_profile(mean_pulse_period: float,
                                                 finalized_phase,
                                                 rest_signal))
     return identification_signal
+
+
+def generate_temperature_profile(positive_phase_length,
+                                 negative_phase_length,
+                                 pulse_shift,
+                                 pulse_amplitude,
+                                 dc_offset,
+                                 no_of_pulses):
+    """Generate temperature profile used for model identification."""
+    # First, we generate periods for each pulse.
+    pulse_periods = [positive_phase_length, negative_phase_length] * int(no_of_pulses)
+    # Generate pulse train.
+    pulse_train = generate_rectangular_pulse_train(np.array(pulse_periods) * 2)
+
+    # Split pulse train into list of phases
+    phase_start_times = np.ceil(np.cumsum(np.repeat(pulse_periods, 2))).astype(int)
+    phases = np.split(pulse_train, phase_start_times[:-1])[::2]
+
+    # We finally construct the identification signal
+    temperature_profile = []
+    for i, phase in enumerate(phases):
+        finalized_phase = phase
+        finalized_phase *= -pulse_amplitude if i % 2 == 0 else pulse_amplitude
+        finalized_phase += dc_offset
+
+        temperature_profile = np.concatenate((temperature_profile, finalized_phase))
+
+    # Remove the samples from the beginning of the
+    # pulse train depending on `pulse_shift`
+    temperature_profile = temperature_profile[int(pulse_shift * (positive_phase_length +
+                                                                 negative_phase_length)):]
+
+    return temperature_profile
