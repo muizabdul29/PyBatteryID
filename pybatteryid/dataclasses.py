@@ -3,23 +3,21 @@ A collection of classes (@dataclasses) for various model
 features.
 """
 
+
 from dataclasses import dataclass, field
 from typing import Callable, Any
 
 import numpy as np
 
+
 @dataclass
 class VoltageFunction:
     """A callable dataclass for creating voltage function."""
     func: Callable
-    soc_values: list[float]
 
-    def __call__(self, soc):
-        return self.func(soc)
+    def __call__(self, soc: float, temperature: float | None = None):
+        return self.func(soc, temperature)
 
-    def get_soc_values(self) -> list[float]:
-        """Get the soc values used to construct the model."""
-        return self.soc_values
 
 @dataclass
 class Model:
@@ -28,6 +26,9 @@ class Model:
     nonlinearity_order: int
     model_terms: np.ndarray[Any, Any]
     model_estimate: np.ndarray[Any, Any]
+    basis_function_strings: list
+    hysteresis_basis_function_strings: list
+
 
 @dataclass
 class BasisFunction:
@@ -36,6 +37,7 @@ class BasisFunction:
     operation: Any
     arguments: list[Any]
     function_string: str
+
 
 @dataclass
 class Signal:
@@ -55,6 +57,7 @@ class Signal:
         updated_args = tuple(past_values) + args
 
         self.trajectory.append( self.equation( *updated_args ) )
+
 
 @dataclass
 class SignalVector:

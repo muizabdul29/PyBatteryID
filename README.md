@@ -33,29 +33,38 @@ model_structure.add_emf_function({'soc_values': soc_values,
                                   'voltage_values': voltage_values})
 ```
 
+The EMF function can be made temperature-dependent by providing two extra arguments, namely, (1) `reference_temperature_value` that refers to the temperature corresponding to the (`soc_values`, `voltage_values`), and (2) `dVdT_values` that describes how the EMF depends on temperature assuming linear temperature dependence.
+
+```python
+model_structure.add_emf_function({'soc_values': soc_values,
+                                  'voltage_values': voltage_values,
+                                  'reference_temperature_value': reference_temperature_value,
+                                  'dVdT_values': dVoltage_dTemperature_values})
+```
+
 #### 3. Add basis functions
 
-PyBatteryID has reserved certain symbols for the scheduling-variable components, namely, `s`, `|i|` and `d` for the SOC, current magnitude and current direction, respectively. It allows the user to conveniently describe certain functional forms of the aforementioned variables by detecting them automatically. In the following, these functional forms are described using the symbol $\square$ as a placeholder for a scheduling-variable component and $\diamond$ for associated hyperparameter(s).
+PyBatteryID has reserved certain symbols for the scheduling-variable components, namely, `s`, `|i|`, `d` and `T` for the SOC, current magnitude, current direction and temperature, respectively. It allows the user to conveniently describe certain functional forms of the aforementioned variables by detecting them automatically. In the following, these functional forms are described using the symbol $\square$ as a placeholder for a scheduling-variable component and $\diamond$ for associated hyperparameter(s).
 
 - $\square$ — No functional transformation.
 - `1/`$\square$ — Inverse of the variable.
 - `log[` $\square$ `]` — Logarithmic transformation of the variable.
 - `exp[`$\diamond$`*sqrt[` $\square$ `]]` — Square-root of the variable followed by exponential transformation, where the hyperparameter can act as a normalization factor. See [[1]](#1).
+- `exp[`$\diamond_0$`*[` $\square$ `]^`$\diamond_1$`]` — Raising the variable to an arbitrary power followed by exponential transformation. Note that the variable can be multiplied by a number and also added to a number. See below for an example.
 - $\square$`[` $\diamond_0$ `, ` $\diamond_1$ `]` — Low-pass filtering of the variable using first-order difference equation. The two hyperparameters correspond to $\varepsilon_0$ and $\varepsilon_1$, where $\varepsilon_0$ gets chosen when the variable is nonzero, and $\varepsilon_1$ otherwise; see [[1]](#1) for more details. Note that such an operation only makes sense with the current direction.
 
 For instance, one may use the following basis functions,
 
 ```python
 model_structure.add_basis_functions(['1/s', 'log[s]', 's',
-                                     'exp[0.05*sqrt[|i|]]', 'd[0.01,0.99]'])
+                                     'exp[0.05*sqrt[|i|]]', 'exp[[0.00366*T+1]^-1]', 'd[0.01,0.99]'])
 ```
 
 #### 4. Run optimization routine(s) to identify model
 
-PyBatteryID allows specification of multiple optimization routines in a pipeline, which can then run in a sequential manner. Indeed, the user needs to provide an identification dataset in the form of a dictionary with keys `time`, `current` and `voltage`. To obtain a battery model, the method `identify` can be used which has the following arguments,
+PyBatteryID allows specification of multiple optimization routines in a pipeline, which can then run in a sequential manner. Indeed, the user needs to provide an identification dataset in the form of a dictionary with keys `initial_soc`, `time_values`, `current_values`, `voltage_values`, and (optional) `temperature_values`. To obtain a battery model, the method `identify` can be used which has the following arguments,
 
 - `dataset` — The identification dataset.
-- `initial_soc` — The battery SOC value corresponding to the first time instant in `dataset`.
 - `model_order` — Model order $n$.
 - `nonlinearity_order` — Nonlinearity order $l$.
 - `optimizers` — A list of optimization routines to run in a sequential manner for a regression setting $A\cdot\theta=y$; where $A$ is the regression matrix and $y$ the output vector. Currently, the available options are `lasso.cvxopt`, `lasso.sklearn` and `ridge.sklearn`.
@@ -63,7 +72,7 @@ PyBatteryID allows specification of multiple optimization routines in a pipeline
 The output of the method `identify` represents an instance of a class `Model` in the PyBatteryID package containing all the necessary information regarding the identified battery model.
 
 ```python
-model = model_structure.identify(dataset, initial_soc=0.982677,
+model = model_structure.identify(dataset,
                                  model_order=1, nonlinearity_order=1,
                                  optimizers=['lasso.cvxopt', 'ridge.sklearn'])
 ```
@@ -77,13 +86,12 @@ The available optimization routines can be specified using the name of the algor
 After the identification of a battery model, we can simulate the voltage output for a certain current profile. In this regard, the method `simulate` can be used which requires the following arguments,
 
 - `model` — The identified model.
-- `dataset` — A dictionary with keys `time`, `current` and `voltage`. The `voltage` key corresponds to a list of initial voltage values. Note that the number of initial values should be at least equal to the model order.
-- `initial_soc` — The initial SOC value corresponding to the first time instant in `dataset`.
+- `dataset` — A dictionary with keys `initial_soc`, `time_values`, `current_values`, `voltage_values` and (optional) `temperature_values`. The `voltage_values` key corresponds to a list of initial voltage values. Note that the number of initial values should be at least equal to the model order. The initial SOC value corresponds to the SOC value at the first time instant `time_values[0]`.
 
 An example usage of the method `simulate` can be given as follows,
 
 ```python
-voltage_simulated = model_structure.simulate(model, dataset, initial_soc=0.97973)
+voltage_simulated = model_structure.simulate(model, dataset)
 ```
 
 ## Relevant publications
@@ -91,6 +99,10 @@ voltage_simulated = model_structure.simulate(model, dataset, initial_soc=0.97973
 <a id="1">[1]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “A comprehensive approach to sparse identification of linear parameter-varying models for lithium-ion batteries using improved experimental design,” *Journal of Energy Storage, 2024*.
 
 <a id="2">[2]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Investigating Identification Input Designs for Modelling Lithium-ion Batteries with Hysteresis using LPV Framework,” *2024 American Control Conference (ACC)*.
+
+<a id="3">[3]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Towards temperature-dependent linear
+parameter-varying models for lithium-ion batteries
+using novel experimental design,” *Submitted to Journal*.
 
 ## License
 PyBatteryID is an open-source library licensed under the BSD-3-Clause license. For more information, see [LICENSE](LICENSE.txt).

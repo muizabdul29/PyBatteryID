@@ -3,3 +3,4 @@ cvxopt
 scikit-learn
 rich
 matplotlib
+pytest

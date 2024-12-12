@@ -1,5 +1,6 @@
 """Setup for the PyBatteryID package"""
 
+# pylint: disable=E0401
 from setuptools import setup, find_packages
 
 with open("README.md", encoding="utf-8") as f:
@@ -7,7 +8,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name='pybatteryid',
-    version='1.2.0',
+    version='2.0.0',
     author='Muiz Sheikh',
     description='Data-driven Battery Model Identification in Python',
     long_description=readme,
@@ -21,6 +22,7 @@ setup(
         'rich',
         'matplotlib'
     ],
+    tests_require=[],
     classifiers = [
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

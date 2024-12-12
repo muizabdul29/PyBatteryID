@@ -2,6 +2,7 @@
 Contains the class `ModelStructure`.
 """
 
+
 from typing import Literal
 
 import numpy as np
@@ -9,9 +10,10 @@ import numpy as np
 from .voltage import load_voltage_model
 from .basisfunctions import extract_basis_functions, combine_symbols, \
     generate_signals, generate_basis_functions, generate_signal_trajectories
-from .regression import setup_regression, run_optimizer
+from .regression import setup_regression, combine_regression_problems, run_optimizer
 from .dataclasses import VoltageFunction, BasisFunction, Model, Signal
 from .typeddicts import VoltageSocData, CurrentVoltageData
+
 
 class ModelStructure:
     """This class allows battery model identification and simulation employing
@@ -35,6 +37,7 @@ class ModelStructure:
     _basis_functions: list[BasisFunction]
     _hysteresis_basis_functions: list[BasisFunction]
 
+
     def __init__(self, battery_capacity: float, sampling_period: float):
         self.battery_capacity = battery_capacity
         self.sampling_period = sampling_period
@@ -44,16 +47,19 @@ class ModelStructure:
         self._basis_functions = []
         self._hysteresis_basis_functions = []
 
+
     def add_emf_function(self, voltage_soc_data: VoltageSocData):
         """Add EMF function used to decompose battery voltage into
         overpotentials and vice versa."""
-        self._emf_function = load_voltage_model(voltage_soc_data['soc_values'],
-                                                voltage_soc_data['voltage_values'])
+        #
+        self._emf_function = load_voltage_model(voltage_soc_data)
+
 
     def add_hysteresis_function(self, voltage_soc_data: VoltageSocData):
         """Add hysteresis function to be used as second model input."""
-        self._hysteresis_function = load_voltage_model(voltage_soc_data['soc_values'],
-                                                       voltage_soc_data['voltage_values'])
+        #
+        self._hysteresis_function = load_voltage_model(voltage_soc_data)
+
 
     def add_basis_functions(self, basis_function_strings: list[str],
                             hysteresis_basis_function_strings: list[str] | None = None):
@@ -64,8 +70,9 @@ class ModelStructure:
             hbfs = hysteresis_basis_function_strings
             self._hysteresis_basis_functions = extract_basis_functions(hbfs)
 
+
     # pylint: disable=too-many-locals
-    def simulate(self, model: Model, dataset: CurrentVoltageData, initial_soc: float):
+    def simulate(self, model: Model, dataset: CurrentVoltageData):
         """Simulate the battery voltage using the provided model
         with the battery current as input."""
         #
@@ -75,8 +82,8 @@ class ModelStructure:
             raise ValueError(f'At least {model.model_order} initial voltage value(s)'
                              ' should be provided.')
         #
-        signals = generate_signals(dataset, self._emf_function, self._hysteresis_function,
-                                   initial_soc, self.sampling_period, self.battery_capacity)
+        signals = generate_signals(dataset, self.battery_capacity, self.sampling_period,
+                                   self._emf_function, self._hysteresis_function)
         #
         basis_functions = generate_basis_functions(self._basis_functions, signals)
         hysteresis_basis_functions = generate_basis_functions(self._hysteresis_basis_functions,
@@ -128,40 +135,68 @@ class ModelStructure:
                 #
                 combined_trajectories_dict[key].append( simulated_voltage.trajectory[-delay] )
 
-        emf_trajectory = self._emf_function(signals.find('s').trajectory)
+        emf_trajectory = []
+        for i, s in enumerate(signals.find('s').trajectory):
+            t = signals.find('T').trajectory[i] if 'temperature_values' in dataset else None
+            emf_trajectory.append(self._emf_function(s, t))
+        #
         return np.add(emf_trajectory, simulated_voltage.trajectory)
 
-    # pylint: disable=too-many-arguments
-    def identify(self, dataset: CurrentVoltageData, initial_soc: float,
-                 model_order: int, nonlinearity_order: int, optimizers: Literal['lasso', 'ridge']):
+
+    def setup_regression_problems(self, datasets: list[CurrentVoltageData],
+                                  model_order: int, nonlinearity_order: int):
+        """Generate regression matrices for the given dataset(s)."""
+        #
+        regression_problems = []
+        for dataset in datasets:
+            signals = generate_signals(dataset, self.battery_capacity, self.sampling_period,
+                                       self._emf_function, self._hysteresis_function)
+            #
+            basis_functions = generate_basis_functions(self._basis_functions, signals)
+            hysteresis_basis_functions = generate_basis_functions(self._hysteresis_basis_functions,
+                                                                  signals)
+            #
+            io_signals = [ signals.find('v'), signals.find('i') ]
+            if self._hysteresis_function is not None:
+                io_signals.append( signals.find('h') )
+            #
+            signal_tuple = io_signals, basis_functions.signals, hysteresis_basis_functions.signals
+            signal_trajectories = generate_signal_trajectories(signal_tuple,
+                                                               model_order, model_order)
+            io_trajectories, p_trajectories, h_trajectories = signal_trajectories
+            #
+            basis_function_keys = combine_symbols(basis_functions.get_symbols(), nonlinearity_order)
+            hysteresis_basis_function_keys = hysteresis_basis_functions.get_symbols()
+            #
+            regression_matrix, regressor_labels = setup_regression(io_trajectories,
+                                                                   p_trajectories,
+                                                                   h_trajectories,
+                                                                   basis_function_keys,
+                                                                   hysteresis_basis_function_keys)
+            output_vector = np.array(signals.find('v').trajectory[model_order:])
+            #
+            regression_problems.append( (regression_matrix, output_vector) )
+        #
+        return regression_problems, regressor_labels
+
+
+    # pylint: disable=too-many-arguments, R0917
+    def identify(self, datasets: list[CurrentVoltageData] | CurrentVoltageData,
+                 model_order: int, nonlinearity_order: int,
+                 optimizers: Literal['lasso.cvxopt', 'lasso.sklearn', 'ridge.sklearn'],
+                 combining_strategy: Literal['concatenate', 'interleave']='interleave'):
         """Identify a battery model using the provided identification
         dataset along with the desired model order and basis-function
         complexity."""
         #
-        signals = generate_signals(dataset, self._emf_function, self._hysteresis_function,
-                                   initial_soc, self.sampling_period, self.battery_capacity)
-        #
-        basis_functions = generate_basis_functions(self._basis_functions, signals)
-        hysteresis_basis_functions = generate_basis_functions(self._hysteresis_basis_functions,
-                                                              signals)
-        #
-        io_signals = [ signals.find('v'), signals.find('i') ]
-        if self._hysteresis_function is not None:
-            io_signals.append( signals.find('h') )
-        #
-        signal_tuple = io_signals, basis_functions.signals, hysteresis_basis_functions.signals
-        signal_trajectories = generate_signal_trajectories(signal_tuple, model_order, model_order)
-        io_trajectories, p_trajectories, h_trajectories = signal_trajectories
-        #
-        basis_function_keys = combine_symbols(basis_functions.get_symbols(), nonlinearity_order)
-        hysteresis_basis_function_keys = hysteresis_basis_functions.get_symbols()
-        #
-        regression_matrix, regressor_labels = setup_regression(io_trajectories,
-                                                               p_trajectories,
-                                                               h_trajectories,
-                                                               basis_function_keys,
-                                                               hysteresis_basis_function_keys)
-        output_vector = np.array(signals.find('v').trajectory[model_order:])
+        if isinstance(datasets, dict):
+            datasets = [ datasets ]
+        regression_problems, regressor_labels = self.setup_regression_problems(datasets,
+                                                                               model_order,
+                                                                               nonlinearity_order)
+        # Combine multiple regression problems
+        regression_matrix, output_vector = combine_regression_problems(regression_problems,
+                                                                       strategy=combining_strategy)
         #
         if not optimizers:
             raise ValueError('Unspecified optimization routine(s).')
@@ -171,9 +206,22 @@ class ModelStructure:
             #
             model_estimate = run_optimizer(regression_matrix, output_vector, optimizer)
             #
-            if 'lasso' in optimizer:
+            if optimizer.split('.')[0] == 'lasso':
                 selected_regressors = np.abs(model_estimate) > 1e-5
-                regression_matrix = regression_matrix[:, selected_regressors] # type: ignore
+                regression_matrix = regression_matrix[:, selected_regressors]  # type: ignore
                 regressor_labels = np.array(regressor_labels)[selected_regressors]
+                model_estimate = np.array(model_estimate)[selected_regressors]
 
-        return Model(model_order, nonlinearity_order, regressor_labels, model_estimate)
+        # We also store basis function strings in the model. It can be
+        # insightful to know what basis functions are used to identify
+        # a model.
+        basis_function_strings = [bf.function_string for bf in self._basis_functions]
+        hysteresis_basis_function_strings = [bf.function_string
+                                             for bf in self._hysteresis_basis_functions]
+
+        return Model(model_order,
+                     nonlinearity_order,
+                     regressor_labels,
+                     model_estimate,
+                     basis_function_strings,
+                     hysteresis_basis_function_strings)
