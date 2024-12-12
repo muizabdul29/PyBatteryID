@@ -50,7 +50,7 @@ PyBatteryID has reserved certain symbols for the scheduling-variable components,
 - `1/`$\square$ — Inverse of the variable.
 - `log[` $\square$ `]` — Logarithmic transformation of the variable.
 - `exp[`$\diamond$`*sqrt[` $\square$ `]]` — Square-root of the variable followed by exponential transformation, where the hyperparameter can act as a normalization factor. See [[1]](#1).
-- `exp[`$\diamond_0$`*[` $\square$ `]^`$\diamond_1$`]` — Raising the variable to an arbitrary power followed by exponential transformation. Note that the variable can be multiplied by a number and also added to a number. See below for an example.
+- `exp[` $\diamond_0$ `*[` $\square$ `]^` $\diamond_1$ `]` — Raising the variable to an arbitrary power followed by exponential transformation. Note that the variable can be multiplied by a number and also added to a number. See below for an example.
 - $\square$`[` $\diamond_0$ `, ` $\diamond_1$ `]` — Low-pass filtering of the variable using first-order difference equation. The two hyperparameters correspond to $\varepsilon_0$ and $\varepsilon_1$, where $\varepsilon_0$ gets chosen when the variable is nonzero, and $\varepsilon_1$ otherwise; see [[1]](#1) for more details. Note that such an operation only makes sense with the current direction.
 
 For instance, one may use the following basis functions,
