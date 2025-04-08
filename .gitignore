@@ -25,3 +25,6 @@ dist/
 
 # MAC garbage
 .DS_Store
+
+# Spyder project data
+.spyproject

@@ -53,7 +53,8 @@ def setup_regression(io_trajectories: dict, p_trajectories: dict, h_trajectories
 
 # pylint: disable=too-many-locals
 def combine_regression_problems(problems: list[tuple[np.ndarray, ...]],
-                                strategy: Literal['concatenate', 'interleave']='interleave'):
+                                strategy: Literal['concatenate', 'interleave']='interleave',
+                                verbose : bool = True):
     """Combine regression problems A1*x=y1, A2*x=y2, and so on."""
     # possible schemes: append, interleave
     if strategy == 'interleave':
@@ -107,48 +108,55 @@ def combine_regression_problems(problems: list[tuple[np.ndarray, ...]],
     else:
         raise ValueError('Invalid strategy to combine regression problems.')
     #
-    rich_print(Panel(("Inverse condition number of regression matrix: "
-                      f"{1 / np.linalg.cond(final_regression_matrix)}"
-                      "\nDimensions of regression matrix: "
-                      f"({final_regression_matrix.shape[0]} rows,"
-                      f" {final_regression_matrix.shape[1]} columns)")))
+    if verbose:
+        rich_print(Panel(("Inverse condition number of regression matrix: "
+                          f"{1 / np.linalg.cond(final_regression_matrix)}"
+                          "\nDimensions of regression matrix: "
+                          f"({final_regression_matrix.shape[0]} rows,"
+                          f" {final_regression_matrix.shape[1]} columns)")))
     #
     return final_regression_matrix, final_output_vector
 
 
-def run_optimizer(regression_matrix: np.ndarray, output_vector: np.ndarray, optimizer: str):
+def run_optimizer(regression_matrix: np.ndarray, output_vector: np.ndarray, 
+                  optimizer: str, verbose : bool = True):
     """Run an optimization routine for a regression problem to
     estimate parameters."""
     #
     if optimizer == 'lasso.cvxopt':
         #
-        rich_print(Panel(("Performing LASSO using `l1regls.py` from cvxopt.org "
-                          "using lambda_1 = 1. See the following link for details:"
-                          "\nhttps://cvxopt.org/examples/mlbook/l1regls.html")))
+        if verbose:
+            rich_print(Panel(("Performing LASSO using `l1regls.py` from cvxopt.org "
+                              "using lambda_1 = 1. See the following link for details:"
+                              "\nhttps://cvxopt.org/examples/mlbook/l1regls.html")))
         #
         estimate = l1regls(matrix(regression_matrix), matrix(output_vector))
         estimate = np.array(estimate).flatten()
     elif optimizer == 'lassocv.sklearn':
         #
-        rich_print(Panel(("Performing cross-validated LASSO using `sklearn` package.")))
+        if verbose:
+            rich_print(Panel(("Performing cross-validated LASSO using `sklearn` package.")))
         #
         alphas = np.linspace(1, 5, num=5 ) / (2 * regression_matrix.shape[0])
         model_fit = LassoCV(fit_intercept=False, alphas=alphas, max_iter=1000000000,
-                            tol=0.1, verbose=True).fit(regression_matrix, output_vector)
+                            tol=0.1, verbose=verbose).fit(regression_matrix, output_vector)
         estimate = np.array(model_fit.coef_).flatten()
         #
-        rich_print("Solution found using [bold]lambda_1 = 2 * alpha * n_samples = "
-                   f"{2 * model_fit.alpha_ * regression_matrix.shape[0]:.2f}")
+        if verbose:
+            rich_print("Solution found using [bold]lambda_1 = 2 * alpha * n_samples = "
+                       f"{2 * model_fit.alpha_ * regression_matrix.shape[0]:.2f}")
     elif optimizer == 'ridgecv.sklearn':
         #
-        rich_print(Panel("Performing cross-validated Ridge regression using `sklearn` package."))
+        if verbose:
+            rich_print(Panel("Performing cross-validated Ridge regression using `sklearn` package."))
         #
         alphas = np.logspace(-3, 1, num=5 )
         model_fit = RidgeCV(fit_intercept=False, cv=10, alphas=alphas).fit(regression_matrix,
                                                                            output_vector)
         estimate = model_fit.coef_
         #
-        rich_print(f"Solution found using [bold]lambda_2 = alpha = {model_fit.alpha_}")
+        if verbose:
+            rich_print(f"Solution found using [bold]lambda_2 = alpha = {model_fit.alpha_}")
     else:
         raise ValueError('Unknown optimization routine.')
     #

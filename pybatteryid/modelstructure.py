@@ -184,7 +184,8 @@ class ModelStructure:
     def identify(self, datasets: list[CurrentVoltageData] | CurrentVoltageData,
                  model_order: int, nonlinearity_order: int,
                  optimizers: Literal['lasso.cvxopt', 'lasso.sklearn', 'ridge.sklearn'],
-                 combining_strategy: Literal['concatenate', 'interleave']='interleave'):
+                 combining_strategy: Literal['concatenate', 'interleave']='interleave',
+                 verbose : bool = True):
         """Identify a battery model using the provided identification
         dataset along with the desired model order and basis-function
         complexity."""
@@ -196,7 +197,8 @@ class ModelStructure:
                                                                                nonlinearity_order)
         # Combine multiple regression problems
         regression_matrix, output_vector = combine_regression_problems(regression_problems,
-                                                                       strategy=combining_strategy)
+                                                                       strategy=combining_strategy,
+                                                                       verbose=verbose)
         #
         if not optimizers:
             raise ValueError('Unspecified optimization routine(s).')
@@ -204,7 +206,7 @@ class ModelStructure:
         model_estimate = np.array([])
         for optimizer in optimizers:
             #
-            model_estimate = run_optimizer(regression_matrix, output_vector, optimizer)
+            model_estimate = run_optimizer(regression_matrix, output_vector, optimizer, verbose)
             #
             if optimizer.split('.')[0] == 'lasso':
                 selected_regressors = np.abs(model_estimate) > 1e-5
