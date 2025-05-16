@@ -18,12 +18,12 @@ def scheduling_signals():
     parent_directory = os.path.dirname(os.path.dirname(__file__))
     #
     dataset = np.load(f'{parent_directory}/examples/data/'
-                      'nmc_with_temperature_data/identification_data_2_6.npy',
+                      'nmc_with_temperature/identification_data_2_6.npy',
                       allow_pickle=True).item()
     dataset['initial_soc'] = 0.9979013241720326
     #
     emf_data = np.load(f'{parent_directory}/examples/data/'
-                       'nmc_with_temperature_data/gitt_data.npy',
+                       'nmc_with_temperature/gitt_data.npy',
                        allow_pickle=True).item()
     #
     model_structure = ModelStructure(battery_capacity, sampling_period)
