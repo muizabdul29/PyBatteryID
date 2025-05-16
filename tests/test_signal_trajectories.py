@@ -21,7 +21,7 @@ def test_io_trajectories():
 
 def test_basis_trajectories():
     """Test basis trajectories."""
-    soc = Signal('s', [100, 200, 300, 400, 500], lambda x: x)
+    soc = Signal('s', [1, 2, 3, 4, 5], lambda x: x)
 
     time_delays = [ [1, 2], [0, 1, 2] ]
 
