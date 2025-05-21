@@ -62,36 +62,37 @@ model_structure.add_basis_functions(['1/s', 'log[s]', 's',
 
 #### 4. Run optimization routine(s) to identify model
 
-PyBatteryID allows specification of multiple optimization routines in a pipeline, which can then run in a sequential manner. Indeed, the user needs to provide an identification dataset in the form of a dictionary with keys `initial_soc`, `time_values`, `current_values`, `voltage_values`, and (optional) `temperature_values`. To obtain a battery model, the method `identify` can be used which has the following arguments,
+PyBatteryID allows specification of multiple optimization routines in a pipeline, which can then run in a sequential manner. Indeed, the user needs to provide an identification dataset in the form of a dictionary with keys `initial_soc`, `time_values`, `current_values`, `voltage_values`, and (optional) `temperature_values`. To obtain a battery model, the function `identify_model` can be used which has the following arguments,
 
 - `dataset` — The identification dataset.
+- `model_structure` — Instance of the `ModelStructure` class.
 - `model_order` — Model order $n$.
 - `nonlinearity_order` — Nonlinearity order $l$.
-- `optimizers` — A list of optimization routines to run in a sequential manner for a regression setting $A\cdot\theta=y$; where $A$ is the regression matrix and $y$ the output vector. Currently, the available options are `lasso.cvxopt`, `lasso.sklearn` and `ridge.sklearn`.
+- `optimizers` — A list of optimization routines to run in a sequential manner for a regression setting $A\cdot\theta=y$; where $A$ is the regression matrix and $y$ the output vector. Currently, the available options are `lasso.cvxopt`, `lassocv.sklearn` and `ridge.sklearn`.
 
-The output of the method `identify` represents an instance of a class `Model` in the PyBatteryID package containing all the necessary information regarding the identified battery model.
+The output of the function `identify_model` represents an instance of a class `Model` in the PyBatteryID package containing all the necessary information regarding the identified battery model.
 
 ```python
-model = model_structure.identify(dataset,
-                                 model_order=1, nonlinearity_order=1,
-                                 optimizers=['lasso.cvxopt', 'ridge.sklearn'])
+model = identify_model(identification_dataset, model_structure,
+                       model_order=3, nonlinearity_order=3,
+                       optimizers=['lassocv.sklearn', 'ridgecv.sklearn'])
 ```
 
 ##### A short note on `optimizers`:
 
-The available optimization routines can be specified using the name of the algorithm suffixed by the name of the package providing the algorithm, for instance, `lasso.cvxopt` and `lasso.sklearn`. Note that the optimizer `lasso.cvxopt` uses fixed regularization parameter as $\lambda_1 = 1$, whereas `lasso.sklearn` performs cross-validated LASSO regression. Among the two options, `lasso.sklearn` is recommended since it has been configured to take significantly less time than the optimizer `lasso.cvxopt` at the cost of slight accuracy loss. Furthermore, `lasso.sklearn` may result in more stable models since the cross-validation can lead to adequate regularization in the case of less informative dataset and/or less representative model structure (i.e., inappropriate candidate model terms).
+The available optimization routines can be specified using the name of the algorithm suffixed by the name of the package providing the algorithm, for instance, `lasso.cvxopt` and `lassocv.sklearn`. Note that the optimizer `lasso.cvxopt` uses fixed regularization parameter as $\lambda_1 = 1$, whereas `lassocv.sklearn` performs cross-validated LASSO regression. Among the two options, `lassocv.sklearn` is recommended since it has been configured to take significantly less time than the optimizer `lasso.cvxopt`. Furthermore, `lassocv.sklearn` may result in more stable models since the cross-validation can lead to adequate regularization in the case of less informative dataset and/or less representative model structure (i.e., inappropriate candidate model terms).
 
 #### 5. Simulate voltage using the identified model
 
-After the identification of a battery model, we can simulate the voltage output for a certain current profile. In this regard, the method `simulate` can be used which requires the following arguments,
+After the identification of a battery model, we can simulate the voltage output for a certain current profile. In this regard, the method `simulate_model` can be used which requires the following arguments,
 
 - `model` — The identified model.
 - `dataset` — A dictionary with keys `initial_soc`, `time_values`, `current_values`, `voltage_values` and (optional) `temperature_values`. The `voltage_values` key corresponds to a list of initial voltage values. Note that the number of initial values should be at least equal to the model order. The initial SOC value corresponds to the SOC value at the first time instant `time_values[0]`.
 
-An example usage of the method `simulate` can be given as follows,
+An example usage of the method `simulate_model` can be given as follows,
 
 ```python
-voltage_simulated = model_structure.simulate(model, dataset)
+voltage_simulated = simulate_model(model, dataset)
 ```
 
 ## Relevant publications

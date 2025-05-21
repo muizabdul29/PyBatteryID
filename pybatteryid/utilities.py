@@ -3,7 +3,7 @@ Several utilities for user's convenience.
 """
 
 
-from dataclasses import asdict, fields
+from dataclasses import asdict
 
 import numpy as np
 
@@ -14,7 +14,7 @@ from rich.jupyter import print as rich_print
 from rich.table import Table
 
 from .typeddicts import CurrentVoltageData
-from .dataclasses import VoltageFunction, Model
+from .dataclasses import VoltageFunction, Model, BasisFunction
 from .basisfunctions import generate_signals
 from .plotter import plot_custom
 
@@ -45,7 +45,7 @@ def analyze_temperature_soc_space(datasets: list[CurrentVoltageData], battery_ca
     for simplex in hull.simplices:
         simplex_tuples.append((points[simplex, 0], points[simplex, 1]))
     #
-    plot_custom(simplex_tuples + soc_temperature_tuples, xlabel=r'SOC [$\%$]',
+    plot_custom(simplex_tuples + soc_temperature_tuples, xlabel=r'SOC [-]',
                 ylabel=r'Temperature [$^\circ$C]', colors=['k'] * len(simplex_tuples),
                 figsize=(6, 2), xaxis_reverse=True)
 
@@ -117,9 +117,19 @@ def load_model_from_file(file_path: str):
     """Load a model from file."""
     model_as_dict = np.load(f'{file_path}', allow_pickle=True).item()
     #
-    model = _dataclass_from_dict(Model, model_as_dict)
-    if not isinstance(model, Model):
-        raise ValueError('Cannot load model.')
+    try:
+        model = Model(**model_as_dict)
+        # Load basis functions
+        model.basis_functions = [BasisFunction(**bf) for bf in model_as_dict['basis_functions']]
+        model.hysteresis_basis_functions = [BasisFunction(**hbf)
+                                            for hbf in model_as_dict['hysteresis_basis_functions']]
+        # Load voltage functions
+        model.emf_function = VoltageFunction(**model_as_dict['emf_function'])
+        if model_as_dict['hysteresis_function'] is not None:
+            model.hysteresis_function = VoltageFunction(**model_as_dict['hysteresis_function'])
+    except Exception as exc:
+        raise ValueError('Cannot load model.') from exc
+    #
     return model
 
 
@@ -127,7 +137,8 @@ def print_model_details(model: Model):
     """Print model details."""
     # We print the details as a table.
     table = Table(title=(f"Model order = {model.model_order}; "
-                         f"Nonlinearity order = {model.nonlinearity_order}"))
+                         f"Nonlinearity order = {model.nonlinearity_order}; "
+                         f"Number of model terms = {len(model.model_estimate)}"))
     #
     table.add_column("Model Term")
     table.add_column("Estimated Parameter")
@@ -136,11 +147,3 @@ def print_model_details(model: Model):
         table.add_row(str(term), str(estimate))
     #
     rich_print(table, markup=False)
-
-
-def _dataclass_from_dict(klass, d):
-    try:
-        fieldtypes = {f.name:f.type for f in fields(klass)}
-        return klass(**{f:_dataclass_from_dict(fieldtypes[f],d[f]) for f in d})
-    except: # pylint: disable=bare-except
-        return d # Not a dataclass field

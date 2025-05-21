@@ -38,6 +38,7 @@ def generate_current_profile(mean_pulse_period: float,
                              std_random_amplitude: float,
                              dc_offset: float,
                              no_of_pulses: int,
+                             sampling_frequency: float = 1,
                              upper_safety_limit: float | None = None,
                              lower_safety_limit: float | None = None):
     """Generate current profile used as identification input.
@@ -65,14 +66,18 @@ def generate_current_profile(mean_pulse_period: float,
             `nu` - DC offset added to the pulse train.
         no_of_pulses : int
             Number of pulses in the signal.
+        sampling_frequency : float
+            Sampling frequency of the input signal.
         upper_safety_limit : float | None
             Upper limit on the identification signal for safety reasons.
         lower_safety_limit : float | None
             Lower limit on the identification signal for safety reasons.
     """
+    # Shorthand
+    fs = sampling_frequency
     # First, we generate periods for each pulse.
-    pulse_periods = np.round(np.abs(np.random.default_rng().normal(mean_pulse_period,
-                                                                   std_pulse_period,
+    pulse_periods = np.round(np.abs(np.random.default_rng().normal(mean_pulse_period * fs,
+                                                                   std_pulse_period * fs,
                                                                    no_of_pulses)))
     # Generate pulse train.
     pulse_train = generate_rectangular_pulse_train(pulse_periods)
@@ -82,8 +87,8 @@ def generate_current_profile(mean_pulse_period: float,
     phases = np.split(pulse_train, phase_start_times[:-1])
 
     # Add rest period following each phase
-    rest_periods = np.rint(np.abs(np.random.default_rng().normal(mean_rest_period,
-                                                                 std_rest_period,
+    rest_periods = np.rint(np.abs(np.random.default_rng().normal(mean_rest_period * fs,
+                                                                 std_rest_period * fs,
                                                                  len(phases)))).astype(int)
     # Define the final amplitude of the signal
     # NOTE: This generates random number per pulse, and not per phase,

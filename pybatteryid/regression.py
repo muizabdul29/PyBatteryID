@@ -132,9 +132,9 @@ def run_optimizer(regression_matrix: np.ndarray, output_vector: np.ndarray, opti
         #
         rich_print(Panel(("Performing cross-validated LASSO using `sklearn` package.")))
         #
-        alphas = np.linspace(1, 5, num=5 ) / (2 * regression_matrix.shape[0])
+        alphas = np.linspace(1, 4, num=4 ) / (2 * regression_matrix.shape[0])
         model_fit = LassoCV(fit_intercept=False, alphas=alphas, max_iter=1000000000,
-                            tol=0.1, verbose=True).fit(regression_matrix, output_vector)
+                            tol=0.01, cv=10, verbose=True).fit(regression_matrix, output_vector)
         estimate = np.array(model_fit.coef_).flatten()
         #
         rich_print("Solution found using [bold]lambda_1 = 2 * alpha * n_samples = "
@@ -143,7 +143,7 @@ def run_optimizer(regression_matrix: np.ndarray, output_vector: np.ndarray, opti
         #
         rich_print(Panel("Performing cross-validated Ridge regression using `sklearn` package."))
         #
-        alphas = np.logspace(-3, 1, num=5 )
+        alphas = np.logspace(-3, 0, num=4 )
         model_fit = RidgeCV(fit_intercept=False, cv=10, alphas=alphas).fit(regression_matrix,
                                                                            output_vector)
         estimate = model_fit.coef_

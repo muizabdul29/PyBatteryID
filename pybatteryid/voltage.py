@@ -5,7 +5,6 @@ a voltage (e.g., EMF) model.
 
 
 import numpy as np
-
 from scipy.interpolate import PchipInterpolator
 
 from .dataclasses import VoltageFunction
@@ -44,18 +43,4 @@ def load_voltage_model(dataset: VoltageSocData):
     # the given Voltage--SOC data.
     voltage_soc_function = create_soc_interpolator(dataset['soc_values'], dataset['voltage_values'])
 
-    def get_voltage_value(soc: float, temperature: float | None):
-        """Interpolate"""
-        voltage_value = voltage_soc_function(soc)
-        #
-        if temperature is not None:
-            if dVdT_soc_function is None:
-                raise ValueError('Temperature-dependance of the voltage is not specified.')
-            if reference_temperature is None:
-                raise ValueError('Reference temperature value not specified.')
-            dVdT_value = dVdT_soc_function(soc) # pylint: disable=C0103
-            return voltage_value + dVdT_value * (temperature - reference_temperature)
-
-        return voltage_value
-
-    return VoltageFunction(get_voltage_value)
+    return VoltageFunction(voltage_soc_function, dVdT_soc_function, reference_temperature)

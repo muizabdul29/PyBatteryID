@@ -13,21 +13,26 @@ import numpy as np
 @dataclass
 class VoltageFunction:
     """A callable dataclass for creating voltage function."""
-    func: Callable
+    emf_func: Callable
+    dvdt_func: Callable | None
+    reference_temperature: float | None
 
     def __call__(self, soc: float, temperature: float | None = None):
-        return self.func(soc, temperature)
+        voltage_value = self.emf_func(soc)
+        #
+        if temperature is not None:
+            if self.dvdt_func is None and self.reference_temperature is None:
+                return voltage_value
+            #
+            if self.dvdt_func is None:
+                raise ValueError('Temperature-dependance of the voltage is not specified.')
+            if self.reference_temperature is None:
+                raise ValueError('Reference temperature value not specified.')
+            #
+            dvdt_value = self.dvdt_func(soc)
+            return voltage_value + dvdt_value * (temperature - self.reference_temperature)
 
-
-@dataclass
-class Model:
-    """Represents a battery model."""
-    model_order: int
-    nonlinearity_order: int
-    model_terms: np.ndarray[Any, Any]
-    model_estimate: np.ndarray[Any, Any]
-    basis_function_strings: list
-    hysteresis_basis_function_strings: list
+        return voltage_value
 
 
 @dataclass
@@ -85,3 +90,19 @@ class SignalVector:
         if result is None:
             raise ValueError('Signal not found.')
         return result
+
+
+# pylint: disable=R0902
+@dataclass
+class Model:
+    """Represents a battery model."""
+    battery_capacity: float
+    sampling_period: float
+    model_order: int
+    nonlinearity_order: int
+    model_terms: np.ndarray[Any, Any]
+    model_estimate: np.ndarray[Any, Any]
+    basis_functions: list[BasisFunction]
+    hysteresis_basis_functions: list[BasisFunction]
+    emf_function: VoltageFunction
+    hysteresis_function: VoltageFunction | None

@@ -7,6 +7,7 @@ from typing import Tuple, Any
 from itertools import combinations_with_replacement
 
 import numpy as np
+
 from .dataclasses import BasisFunction, Signal, SignalVector, VoltageFunction
 from .typeddicts import CurrentVoltageData
 
@@ -164,8 +165,8 @@ def generate_signals(dataset: CurrentVoltageData, battery_capacity: float, sampl
     return signals
 
 
-def generate_basis_functions(basis_functions: list[BasisFunction], signals: SignalVector):
-    """Generate basis functions using `Signal` class."""
+def generate_basis_function_signals(basis_functions: list[BasisFunction], signals: SignalVector):
+    """Generate basis function signals using `Signal` class."""
     # Second, we generate basis-function trajectories
     basis_function_signals = []
     for basis_function in basis_functions:
@@ -174,9 +175,14 @@ def generate_basis_functions(basis_functions: list[BasisFunction], signals: Sign
         if basic_signal is None:
             raise ValueError('Symbol not recognized.')
         #
-        basis_function_signal = perform_signal_operation(basic_signal, basis_function.operation,
-                                                         basis_function.arguments,
-                                                         basis_function.function_string)
+        try:
+            basis_function_signal = perform_signal_operation(basic_signal, basis_function.operation,
+                                                             basis_function.arguments,
+                                                             basis_function.function_string)
+        except ValueError as exc:
+            raise ValueError(("Error generating basis function signal for symbol: "
+                             f"{basis_function.function_string}")) from exc
+        #
         basis_function_signals.append(basis_function_signal)
     #
     return SignalVector(basis_function_signals)
@@ -195,12 +201,12 @@ def generate_io_trajectories(io_signal_vector: list[Signal], time_delays, model_
     return io_trajectories_dict
 
 
-def generate_basis_trajectories(basis_functions: list[Signal], time_delays, model_order):
+def generate_basis_trajectories(basis_function_signals: list[Signal], time_delays, model_order):
     """Generate a dictionary of basis-function trajectories
     including their delayed versions."""
     p_trajectories_dict = {}
     possible_time_delays = sorted({d for delays in time_delays for d in delays})
-    for signal in basis_functions:
+    for signal in basis_function_signals:
         for delay in possible_time_delays:
             key = signal.symbol + ('(k-' + str(delay) + ')' if delay > 0 else '(k)')
             indices = (model_order - delay, -delay if delay > 0 else None)
