@@ -5,7 +5,7 @@ user-provided strings.
 
 import math as m
 
-from pybatteryid.basisfunctions import extract_basis_functions, generate_basis_functions
+from pybatteryid.basisfunctions import extract_basis_functions, generate_basis_function_signals
 from pybatteryid.dataclasses import SignalVector
 
 
@@ -16,7 +16,7 @@ def test_no_operation(scheduling_signals: SignalVector):
     #
     strings = ['s']
     basis_functions = extract_basis_functions(strings)
-    signal_vector = generate_basis_functions(basis_functions, scheduling_signals)
+    signal_vector = generate_basis_function_signals(basis_functions, scheduling_signals)
     #
     result = signal_vector.find(strings[0])
 
@@ -30,7 +30,7 @@ def test_inverse_operation(scheduling_signals: SignalVector):
     #
     strings = ['1/s']
     basis_functions = extract_basis_functions(strings)
-    signal_vector = generate_basis_functions(basis_functions, scheduling_signals)
+    signal_vector = generate_basis_function_signals(basis_functions, scheduling_signals)
     #
     result = signal_vector.find(strings[0])
 
@@ -44,7 +44,7 @@ def test_log_operation(scheduling_signals: SignalVector):
     #
     strings = ['log[s]']
     basis_functions = extract_basis_functions(strings)
-    signal_vector = generate_basis_functions(basis_functions, scheduling_signals)
+    signal_vector = generate_basis_function_signals(basis_functions, scheduling_signals)
     #
     result = signal_vector.find(strings[0])
 
@@ -59,7 +59,7 @@ def test_exp_sqrt_abs_operation(scheduling_signals: SignalVector):
     #
     strings = ['exp[0.05*sqrt[|i|]]', 'exp[-2.759*sqrt[0.5*s+140]]']
     basis_functions = extract_basis_functions(strings)
-    signal_vector = generate_basis_functions(basis_functions, scheduling_signals)
+    signal_vector = generate_basis_function_signals(basis_functions, scheduling_signals)
     #
     result = signal_vector.find(strings[0])
 
@@ -79,7 +79,7 @@ def test_exp_pow_abs_operation(scheduling_signals: SignalVector):
     #
     strings = ['exp[[0.00366*T+1]^-1]', 'exp[-2.759*[|-1.5*i+1890|]^+2.89]']
     basis_functions = extract_basis_functions(strings)
-    signal_vector = generate_basis_functions(basis_functions, scheduling_signals)
+    signal_vector = generate_basis_function_signals(basis_functions, scheduling_signals)
     #
     result = signal_vector.find(strings[0])
 

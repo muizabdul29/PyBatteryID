@@ -35,6 +35,6 @@ def scheduling_signals():
     signals = generate_signals(dataset,
                                battery_capacity,
                                sampling_period,
-                               model_structure._emf_function, # pylint: disable=W0212
+                               model_structure.emf_function,
                                None)
     yield signals
