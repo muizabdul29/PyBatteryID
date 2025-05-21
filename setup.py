@@ -8,7 +8,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name='pybatteryid',
-    version='2.0.1',
+    version='3.0.0',
     author='Muiz Sheikh',
     description='Data-driven Battery Model Identification in Python',
     long_description=readme,
@@ -16,7 +16,7 @@ setup(
     url="https://github.com/muizabdul29/PyBatteryID",
     packages=find_packages(include=['pybatteryid', 'pybatteryid.*']),
     install_requires=[
-        'numpy>=1.20.0',
+        'numpy>=2.1.0',
         'cvxopt',
         'scikit-learn',
         'rich',
