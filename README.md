@@ -97,13 +97,12 @@ voltage_simulated = simulate_model(model, dataset)
 
 ## Relevant publications
 
-<a id="1">[1]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “A comprehensive approach to sparse identification of linear parameter-varying models for lithium-ion batteries using improved experimental design,” *Journal of Energy Storage, 2024*.
+<a id="1">[1]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “A comprehensive approach to sparse identification of linear parameter-varying models for lithium-ion batteries using improved experimental design,” *Journal of Energy Storage, 2024*. https://doi.org/10.1016/j.est.2024.112581
 
-<a id="2">[2]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Investigating Identification Input Designs for Modelling Lithium-ion Batteries with Hysteresis using LPV Framework,” *2024 American Control Conference (ACC)*.
+<a id="2">[2]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Investigating Identification Input Designs for Modelling Lithium-ion Batteries with Hysteresis using LPV Framework,” *2024 American Control Conference (ACC)*. https://doi.org/10.23919/ACC60939.2024.10644893
 
 <a id="3">[3]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Towards temperature-dependent linear
-parameter-varying models for lithium-ion batteries
-using novel experimental design,” *Submitted to Journal*.
+parameter-varying models for lithium-ion batteries using novel experimental design,” *Journal of Energy Storage, 2025*. https://doi.org/10.1016/j.est.2025.116311
 
 ## License
 PyBatteryID is an open-source library licensed under the BSD-3-Clause license. For more information, see [LICENSE](LICENSE.txt).
