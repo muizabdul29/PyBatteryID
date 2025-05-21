@@ -1,5 +1,12 @@
 # PyBatteryID
 
+<div>
+
+[![DOI](https://zenodo.org/badge/704093134.svg)](https://doi.org/10.5281/zenodo.15437221)
+[![release](https://img.shields.io/github/v/release/muizabdul29/PyBatteryID)](https://github.com/muizabdul29/PyBatteryID/releases)
+
+</div>
+
 **PyBatteryID** — a shorthand for **Py**thon **Battery** Model **ID**entification, is an open-source library for data-driven battery model identification in the linear parameter-varying (LPV) framework. 
 
 > Briefly, the LPV framework can be considered as an upgrade to the linear time-invariant (LTI) framework for systems whose dynamics cannot be considered time-invariant — for instance, batteries exhibit varying dynamics as the battery state-of-charge (SOC), temperature, current magnitude, and current direction vary. Refer to the book [Modeling and Identification of Linear Parameter-Varying Systems](https://link.springer.com/book/10.1007/978-3-642-13812-6) for a formal introduction to the LPV systems.
