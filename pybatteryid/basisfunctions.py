@@ -222,9 +222,10 @@ def generate_signal_trajectories(signals: Tuple[list[Signal], ...], model_order:
     #
     io_signals, basis_function_signals, hysteresis_basis_function_signals = signals
     #
-    time_delays = [np.arange(1, model_order + 1, 1).tolist(), # voltage
-                    np.arange(0, model_order + 1, 1).tolist(), # current
-                    [0]] # hysteresis input
+    time_delays = [
+        [0] if signal.symbol == 'h'
+        else np.arange(signal.symbol == 'v', model_order + 1).tolist() for signal in io_signals
+    ]
     #
     io_trajectories_dict = generate_io_trajectories(io_signals,
                                                     time_delays, no_of_initial_values)

@@ -23,6 +23,8 @@ pip install pybatteryid
 
 In the following, an example usage of PyBatteryID has been demonstrated for modelling the battery overpotential using the LPV framework while assuming the battery electromotive force (EMF) to be known *a priori* via appropriate experiments, such as GITT, or low-current cycling. In effect, the battery voltage output at a given time instant can then be calculated by using the EMF value at that instant and evaluating the overpotential using the identified LPV model.
 
+> It is highly recommended that the user follows the International System of Units (SI) while using PyBatteryID. For example, the battery capacity should be specified in Coulombs, time in seconds, current in amperes, voltage in volts, and temperature in Kelvin.
+
 #### 1. Initialize model structure
 
 The very first step is to create an instance of the `ModelStructure` class which requires the capacity of the studied battery and the model sampling time.
@@ -110,6 +112,10 @@ voltage_simulated = simulate_model(model, dataset)
 
 <a id="3">[3]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Towards temperature-dependent linear
 parameter-varying models for lithium-ion batteries using novel experimental design,” *Journal of Energy Storage, 2025*. https://doi.org/10.1016/j.est.2025.116311
+
+## Get in touch
+
+For general inquiries about using the package, you can either [start a discussion](https://github.com/muizabdul29/PyBatteryID/discussions) or email at [a.m.a.sheikh@tue.nl](mailto:a.m.a.sheikh@tue.nl) (Muiz Sheikh).
 
 ## License
 PyBatteryID is an open-source library licensed under the BSD-3-Clause license. For more information, see [LICENSE](LICENSE.txt).

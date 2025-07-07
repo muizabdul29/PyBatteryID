@@ -13,10 +13,11 @@ from .basisfunctions import combine_symbols, generate_signals, generate_basis_fu
     generate_signal_trajectories
 
 
-# pylint: disable=R0914
+# pylint: disable=R0914,W0102
 def setup_regression_problems(datasets: list[CurrentVoltageData],
                               model_structure: ModelStructure,
-                              model_order: int, nonlinearity_order: int):
+                              model_order: int, nonlinearity_order: int,
+                              input_symbols: list[str] = ['i']):
     """Generate regression matrices for the given dataset(s)."""
     # Shorthand for convenience
     ms = model_structure
@@ -28,11 +29,10 @@ def setup_regression_problems(datasets: list[CurrentVoltageData],
         #
         bf_signal_vector = generate_basis_function_signals(ms.basis_functions, signals)
         hysteresis_bf_signal_vector = generate_basis_function_signals(ms.hysteresis_basis_functions,
-                                                              signals)
+                                                                      signals)
         #
-        io_signals = [ signals.find('v'), signals.find('i') ]
-        if ms.hysteresis_function is not None:
-            io_signals.append( signals.find('h') )
+        io_signals = [signals.find(s)
+                      for s in ['v'] + input_symbols + (['h'] if ms.hysteresis_function else [])]
         #
         signal_tuple = io_signals, bf_signal_vector.signals, hysteresis_bf_signal_vector.signals
         signal_trajectories = generate_signal_trajectories(signal_tuple,
