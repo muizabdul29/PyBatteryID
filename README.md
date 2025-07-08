@@ -31,7 +31,7 @@ There are a few experiments that the user may need to perform before using PyBat
 
 In the following, an example usage of PyBatteryID has been demonstrated for modelling the battery overpotential using the LPV framework while assuming the battery electromotive force (EMF) to be known *a priori* via appropriate experiments, such as GITT, or low-current cycling. In effect, the battery voltage output at a given time instant can then be calculated by using the EMF value at that instant and evaluating the overpotential using the identified LPV model.
 
-> It is highly recommended that the user follows the International System of Units (SI) while using PyBatteryID. For example, the battery capacity should be specified in Coulombs, time in seconds, current in amperes, voltage in volts, and temperature in Kelvin.
+> It is recommended that the user follows the International System of Units (SI) while using PyBatteryID. For example, the battery capacity should be specified in Coulombs, time in seconds, current in amperes, and voltage in volts. For the temperature, both Celsius or Kelvin can be used as long as the user stays consistent and adjusts the temperature-related basis functions accordingly. Note that the temperature is in Celsius in the [examples](/examples/3_1_nmc_with_temperature_identification.ipynb) provided with the package.
 
 #### 1. Initialize model structure
 
