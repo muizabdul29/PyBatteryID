@@ -66,8 +66,8 @@ def identify_model(datasets: list[CurrentVoltageData] | CurrentVoltageData,
     # Shorthand for convenience
     ms = model_structure
     #
-    if isinstance(datasets, dict):
-        datasets = [ datasets ]
+    if not isinstance(datasets, list):
+        datasets = [datasets]
     regression_problems, regressor_labels = setup_regression_problems(datasets,
                                                                       model_structure,
                                                                       model_order,

@@ -42,7 +42,7 @@ def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunc
          r"(([0-9]*[.])?[0-9]+)\]$", [0, 1, 3], Operation.LOWPASS)
     ]
     #
-    for i, function_string in enumerate(basis_function_strings):
+    for function_string in basis_function_strings:
         for identifier, indices, operation in identifiers:
             #
             result = re.findall(identifier, function_string.strip())
@@ -52,7 +52,7 @@ def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunc
                 basis_functions.append(BasisFunction(result[indices[0]], operation, args,
                                                      function_string))
                 break
-        if len(basis_functions) == i:
+        else:
             raise ValueError(f"Could not recognize expression: {function_string}")
     return basis_functions
 

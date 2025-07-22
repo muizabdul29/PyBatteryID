@@ -19,19 +19,19 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install PyBatte
 pip install pybatteryid
 ```
 
-## Required experimental datasets
+## Regarding the required experiments
 
 There are a few experiments that the user may need to perform before using PyBatteryID, namely,
 
-1. **Battery electromotive force (EMF)**: Also referred to as the open-circuit voltage (OCV). The user needs to provide (SOC, EMF) points that cover the SOC range expected in the test application. PyBatteryID performs interpolation using the given points to determine an EMF value for a certain SOC value. Note that by design, PyBatteryID DOES NOT perform extrapolation outside the given SOC range, because this can lead to poor modelling results.
+1. **Battery electromotive force (EMF) data**: Also referred to as the open-circuit voltage (OCV). The user needs to provide the (SOC, EMF) points that cover the SOC range expected in the test application. PyBatteryID performs interpolation using the given points to determine an EMF value for a certain SOC value. Note that by design, PyBatteryID DOES NOT perform extrapolation outside the given SOC range, because this can lead to poor modelling results.
 
-2. **Informative identification experiment(s)**: The user must provide a sufficiently informative identification dataset, comprising current-voltage data (and optionally, temperature data if temperature-dependent models are desired). Please DO NOT expect a low-quality dataset, such as an HPPC test or a random drive cycle, to give you good models. In our paper [1], we have emphasised as much as possible that an informative dataset is crucial for obtaining high-quality (accurate, sparse, etc.) models, while presenting a current profile design that can lead to suitable identification datasets (see [examples/4_input_design.ipynb](/examples/4_input_design.ipynb)). Also note that this requirement holds for *any* modelling activity, and not specific to PyBatteryID or batteries, namely, it is a general principle of the **[System Identification](https://en.wikipedia.org/wiki/System_identification)** to use informative identification datasets.
+2. **Current--voltage data**: The user must provide a sufficiently informative identification dataset, comprising current-voltage data (and optionally, temperature data if temperature-dependent models are desired). Please DO NOT expect a low-quality dataset, such as an HPPC test or a random drive cycle, to give you good models. In our paper [1], we have emphasised as much as possible that an informative dataset is crucial for obtaining high-quality (accurate, sparse, etc.) models, while presenting a current profile design that can lead to suitable identification datasets (see [examples/4_input_design.ipynb](/examples/4_input_design.ipynb)). Also note that this requirement holds for *any* modelling activity, and not specific to PyBatteryID or batteries, namely, it is a general principle of the **[System Identification](https://en.wikipedia.org/wiki/System_identification)** to use informative identification datasets.
 
 ## Basic usage
 
 In the following, an example usage of PyBatteryID has been demonstrated for modelling the battery overpotential using the LPV framework while assuming the battery electromotive force (EMF) to be known *a priori* via appropriate experiments, such as GITT, or low-current cycling. In effect, the battery voltage output at a given time instant can then be calculated by using the EMF value at that instant and evaluating the overpotential using the identified LPV model.
 
-> It is recommended that the user follows the International System of Units (SI) while using PyBatteryID. For example, the battery capacity should be specified in Coulombs, time in seconds, current in amperes, and voltage in volts. For the temperature, both Celsius or Kelvin can be used as long as the user stays consistent and adjusts the temperature-related basis functions accordingly. Note that the temperature is in Celsius in the [examples](/examples/3_1_nmc_with_temperature_identification.ipynb) provided with the package.
+> It is recommended that the user follows the International System of Units (SI) while using PyBatteryID. For example, the battery capacity should be specified in Coulombs, time in seconds, current in amperes, and voltage in volts. For the temperature, both Celsius or Kelvin can be used as long as the user stays consistent and adjusts the temperature-related basis functions accordingly. Note that the temperature is in Celsius in the [example](/examples/3_1_nmc_with_temperature_identification.ipynb) provided with the package.
 
 #### 1. Initialize model structure
 
