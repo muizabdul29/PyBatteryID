@@ -15,7 +15,7 @@ from rich.table import Table
 
 from .typeddicts import CurrentVoltageData
 from .dataclasses import VoltageFunction, Model, BasisFunction
-from .basisfunctions import generate_signals
+from .basisfunctions import Operation, generate_signals
 from .plotter import plot_custom
 
 
@@ -110,7 +110,12 @@ def save_model_to_file(model: Model, path_to_directory: str, description: str):
     file_name = f'{description}_n,l={model.model_order},{model.nonlinearity_order}'
     file_path = f'{path_to_directory}/{file_name}'
 
-    np.save(file_path, asdict(model)) # type: ignore
+    model_as_dict = asdict(model)
+    # Change enum to its value
+    for bf in model_as_dict['basis_functions']:
+        bf['operation'] = bf['operation'].value
+    #
+    np.save(file_path, model_as_dict) # type: ignore
 
 
 def load_model_from_file(file_path: str):
@@ -120,9 +125,14 @@ def load_model_from_file(file_path: str):
     try:
         model = Model(**model_as_dict)
         # Load basis functions
-        model.basis_functions = [BasisFunction(**bf) for bf in model_as_dict['basis_functions']]
-        model.hysteresis_basis_functions = [BasisFunction(**hbf)
-                                            for hbf in model_as_dict['hysteresis_basis_functions']]
+        model.basis_functions = [
+            BasisFunction(**{**bf, 'operation': Operation(bf['operation'])})
+            for bf in model_as_dict['basis_functions']
+        ]
+        model.hysteresis_basis_functions = [
+            BasisFunction(**{**hbf, 'operation': Operation(hbf['operation'])})
+            for hbf in model_as_dict['hysteresis_basis_functions']
+        ]
         # Load voltage functions
         model.emf_function = VoltageFunction(**model_as_dict['emf_function'])
         if model_as_dict['hysteresis_function'] is not None:
