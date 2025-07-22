@@ -42,7 +42,7 @@ def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunc
          r"(([0-9]*[.])?[0-9]+)\]$", [0, 1, 3], Operation.LOWPASS)
     ]
     #
-    for i, function_string in enumerate(basis_function_strings):
+    for function_string in basis_function_strings:
         for identifier, indices, operation in identifiers:
             #
             result = re.findall(identifier, function_string.strip())
@@ -52,7 +52,7 @@ def extract_basis_functions(basis_function_strings: list[str]) -> list[BasisFunc
                 basis_functions.append(BasisFunction(result[indices[0]], operation, args,
                                                      function_string))
                 break
-        if len(basis_functions) == i:
+        else:
             raise ValueError(f"Could not recognize expression: {function_string}")
     return basis_functions
 
@@ -222,9 +222,10 @@ def generate_signal_trajectories(signals: Tuple[list[Signal], ...], model_order:
     #
     io_signals, basis_function_signals, hysteresis_basis_function_signals = signals
     #
-    time_delays = [np.arange(1, model_order + 1, 1).tolist(), # voltage
-                    np.arange(0, model_order + 1, 1).tolist(), # current
-                    [0]] # hysteresis input
+    time_delays = [
+        [0] if signal.symbol == 'h'
+        else np.arange(signal.symbol == 'v', model_order + 1).tolist() for signal in io_signals
+    ]
     #
     io_trajectories_dict = generate_io_trajectories(io_signals,
                                                     time_delays, no_of_initial_values)

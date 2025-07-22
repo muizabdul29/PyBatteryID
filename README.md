@@ -1,5 +1,12 @@
 # PyBatteryID
 
+<div>
+
+[![release](https://img.shields.io/github/v/release/muizabdul29/PyBatteryID)](https://github.com/muizabdul29/PyBatteryID/releases)
+[![DOI](https://zenodo.org/badge/704093134.svg)](https://doi.org/10.5281/zenodo.15437221)
+
+</div>
+
 **PyBatteryID** — a shorthand for **Py**thon **Battery** Model **ID**entification, is an open-source library for data-driven battery model identification in the linear parameter-varying (LPV) framework. 
 
 > Briefly, the LPV framework can be considered as an upgrade to the linear time-invariant (LTI) framework for systems whose dynamics cannot be considered time-invariant — for instance, batteries exhibit varying dynamics as the battery state-of-charge (SOC), temperature, current magnitude, and current direction vary. Refer to the book [Modeling and Identification of Linear Parameter-Varying Systems](https://link.springer.com/book/10.1007/978-3-642-13812-6) for a formal introduction to the LPV systems.
@@ -12,9 +19,19 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install PyBatte
 pip install pybatteryid
 ```
 
+## Regarding the required experiments
+
+There are a few experiments that the user may need to perform before using PyBatteryID, namely,
+
+1. **Battery electromotive force (EMF) data**: Also referred to as the open-circuit voltage (OCV). The user needs to provide the (SOC, EMF) points that cover the SOC range expected in the test application. PyBatteryID performs interpolation using the given points to determine an EMF value for a certain SOC value. Note that by design, PyBatteryID DOES NOT perform extrapolation outside the given SOC range, because this can lead to poor modelling results.
+
+2. **Current-voltage data**: The user must provide a sufficiently informative identification dataset, comprising current-voltage data (and optionally, temperature data if temperature-dependent models are desired). Please DO NOT expect a low-quality dataset, such as an HPPC test or a random drive cycle, to give you good models. In our paper [1], we have emphasised as much as possible that an informative dataset is crucial for obtaining high-quality (accurate, sparse, etc.) models, while presenting a current profile design that can lead to suitable identification datasets (see [examples/4_input_design.ipynb](/examples/4_input_design.ipynb)). Also note that this requirement holds for *any* modelling activity, and not specific to PyBatteryID or batteries, namely, it is a general principle of the **[System Identification](https://en.wikipedia.org/wiki/System_identification)** to use informative identification datasets.
+
 ## Basic usage
 
 In the following, an example usage of PyBatteryID has been demonstrated for modelling the battery overpotential using the LPV framework while assuming the battery electromotive force (EMF) to be known *a priori* via appropriate experiments, such as GITT, or low-current cycling. In effect, the battery voltage output at a given time instant can then be calculated by using the EMF value at that instant and evaluating the overpotential using the identified LPV model.
+
+> It is recommended that the user follows the International System of Units (SI) while using PyBatteryID. For example, the battery capacity should be specified in Coulombs, time in seconds, current in amperes, and voltage in volts. For the temperature, both Celsius or Kelvin can be used as long as the user stays consistent and adjusts the temperature-related basis functions accordingly. Note that the temperature is in Celsius in the [example](/examples/3_1_nmc_with_temperature_identification.ipynb) provided with the package.
 
 #### 1. Initialize model structure
 
@@ -97,13 +114,16 @@ voltage_simulated = simulate_model(model, dataset)
 
 ## Relevant publications
 
-<a id="1">[1]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “A comprehensive approach to sparse identification of linear parameter-varying models for lithium-ion batteries using improved experimental design,” *Journal of Energy Storage, 2024*.
+<a id="1">[1]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “A comprehensive approach to sparse identification of linear parameter-varying models for lithium-ion batteries using improved experimental design,” *Journal of Energy Storage, 2024*. https://doi.org/10.1016/j.est.2024.112581
 
-<a id="2">[2]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Investigating Identification Input Designs for Modelling Lithium-ion Batteries with Hysteresis using LPV Framework,” *2024 American Control Conference (ACC)*.
+<a id="2">[2]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Investigating Identification Input Designs for Modelling Lithium-ion Batteries with Hysteresis using LPV Framework,” *2024 American Control Conference (ACC)*. https://doi.org/10.23919/ACC60939.2024.10644893
 
 <a id="3">[3]</a> A.M.A. Sheikh, M.C.F. Donkers, and H.J. Bergveld, “Towards temperature-dependent linear
-parameter-varying models for lithium-ion batteries
-using novel experimental design,” *Submitted to Journal*.
+parameter-varying models for lithium-ion batteries using novel experimental design,” *Journal of Energy Storage, 2025*. https://doi.org/10.1016/j.est.2025.116311
+
+## Get in touch
+
+For general inquiries about using the package, you can either [start a discussion](https://github.com/muizabdul29/PyBatteryID/discussions) or email at [a.m.a.sheikh@tue.nl](mailto:a.m.a.sheikh@tue.nl) (Muiz Sheikh).
 
 ## License
 PyBatteryID is an open-source library licensed under the BSD-3-Clause license. For more information, see [LICENSE](LICENSE.txt).
