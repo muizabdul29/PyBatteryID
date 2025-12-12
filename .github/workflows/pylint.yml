@@ -1,44 +1,24 @@
-name: Continuous Testing
+name: Pylint
 
-on:
-  push:
-    branches:
-      - develop
-      - master
-      - "feature/*"
-      - "release/*"
-      - "hotfix/*"
-  pull_request:
-    branches:
-      - develop
-      - master
+on: [push]
 
 jobs:
-  test:
-    name: Run tests
+  build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: [3.12]
-
+        python-version: ["3.12"]
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: Install package
-        run: |
-          pip install -e .
-
-      - name: Run tests
-        run: pytest -q
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pylint
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Analysing the code with pylint
+      run: |
+        pylint $(git ls-files '*.py')
