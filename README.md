@@ -1,7 +1,7 @@
 # PyBatteryID
 
 <div>
-
+[![CI](https://github.com/tue-battery/PyBatteryID/actions/workflows/ci.yml/badge.svg)](https://github.com/tue-battery/PyBatteryID/actions/workflows/ci.yml)
 [![release](https://img.shields.io/github/v/release/muizabdul29/PyBatteryID)](https://github.com/muizabdul29/PyBatteryID/releases)
 [![DOI](https://zenodo.org/badge/704093134.svg)](https://doi.org/10.5281/zenodo.15437221)
 
