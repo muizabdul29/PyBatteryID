@@ -9,16 +9,18 @@ from typing import Callable, Any
 
 import numpy as np
 
+from scipy.interpolate import PchipInterpolator
+
 
 @dataclass
 class VoltageFunction:
     """A callable dataclass for creating voltage function."""
-    emf_func: Callable
-    dvdt_func: Callable | None
+    voltage_func: PchipInterpolator
+    dvdt_func: PchipInterpolator | None
     reference_temperature: float | None
 
     def __call__(self, soc: float, temperature: float | None = None):
-        voltage_value = self.emf_func(soc)
+        voltage_value = self.voltage_func(soc)
         #
         if temperature is not None:
             if self.dvdt_func is None and self.reference_temperature is None:

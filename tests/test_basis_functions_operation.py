@@ -5,13 +5,20 @@ user-provided strings.
 
 import math as m
 
-from pybatteryid.basisfunctions import extract_basis_functions, generate_basis_function_signals
-from pybatteryid.dataclasses import SignalVector
+from pybatteryid.basisfunctions import generate_signals, extract_basis_functions, \
+    generate_basis_function_signals
+from pybatteryid.modelstructure import ModelStructure
+from pybatteryid.typeddicts import CurrentVoltageData
 
 
-def test_no_operation(scheduling_signals: SignalVector):
+
+def test_no_operation(model_structure: ModelStructure, dataset: CurrentVoltageData):
     """No operation."""
 
+    scheduling_signals = generate_signals(dataset,
+                                          model_structure.battery_capacity,
+                                          model_structure.sampling_period,
+                                          model_structure.emf_function, None)
     s = scheduling_signals.find('s')
     #
     strings = ['s']
@@ -23,9 +30,13 @@ def test_no_operation(scheduling_signals: SignalVector):
     assert result.symbol == s.symbol
     assert result.trajectory == s.trajectory
 
-def test_inverse_operation(scheduling_signals: SignalVector):
+def test_inverse_operation(model_structure: ModelStructure, dataset: CurrentVoltageData):
     """Inverse operation."""
 
+    scheduling_signals = generate_signals(dataset,
+                                        model_structure.battery_capacity,
+                                        model_structure.sampling_period,
+                                        model_structure.emf_function, None)
     s = scheduling_signals.find('s')
     #
     strings = ['1/s']
@@ -37,9 +48,13 @@ def test_inverse_operation(scheduling_signals: SignalVector):
     assert result.symbol == strings[0]
     assert result.trajectory == [1 / x for x in s.trajectory]
 
-def test_log_operation(scheduling_signals: SignalVector):
+def test_log_operation(model_structure: ModelStructure, dataset: CurrentVoltageData):
     """Logarithmic operation."""
 
+    scheduling_signals = generate_signals(dataset,
+                                          model_structure.battery_capacity,
+                                          model_structure.sampling_period,
+                                          model_structure.emf_function, None)
     s = scheduling_signals.find('s')
     #
     strings = ['log[s]']
@@ -51,9 +66,13 @@ def test_log_operation(scheduling_signals: SignalVector):
     assert result.symbol == strings[0]
     assert result.trajectory == [m.log(x) for x in s.trajectory]
 
-def test_exp_sqrt_abs_operation(scheduling_signals: SignalVector):
+def test_exp_sqrt_abs_operation(model_structure: ModelStructure, dataset: CurrentVoltageData):
     """Exponential square-root operation."""
 
+    scheduling_signals = generate_signals(dataset,
+                                          model_structure.battery_capacity,
+                                          model_structure.sampling_period,
+                                          model_structure.emf_function, None)
     i = scheduling_signals.find('i')
     s = scheduling_signals.find('s')
     #
@@ -71,9 +90,13 @@ def test_exp_sqrt_abs_operation(scheduling_signals: SignalVector):
     assert result.symbol == strings[1]
     assert result.trajectory == [m.exp(-2.759*m.sqrt(0.5*x+140)) for x in s.trajectory]
 
-def test_exp_pow_abs_operation(scheduling_signals: SignalVector):
+def test_exp_pow_abs_operation(model_structure: ModelStructure, dataset: CurrentVoltageData):
     """Exponential arbitrary power operation."""
 
+    scheduling_signals = generate_signals(dataset,
+                                          model_structure.battery_capacity,
+                                          model_structure.sampling_period,
+                                          model_structure.emf_function, None)
     T = scheduling_signals.find('T') # pylint: disable=C0103
     i = scheduling_signals.find('i')
     #

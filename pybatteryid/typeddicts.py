@@ -18,7 +18,7 @@ class VoltageSocData(TypedDict):
 class CurrentVoltageData(TypedDict):
     """A dictionary for current--voltage data."""
     initial_soc: float
-    time_values: NDArray
+    time_values: NotRequired[NDArray]
     current_values: NDArray
     voltage_values: NDArray
     temperature_values: NotRequired[NDArray]

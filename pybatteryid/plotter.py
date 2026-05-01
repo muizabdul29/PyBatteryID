@@ -13,7 +13,7 @@ def plot_custom(x_y_data_tuples: list[Tuple], figsize: Tuple[int, int]=(10, 3),
                 xlabel: str='x', ylabel: str='y', legends: list[str]|None=None,
                 linestyles: list[str]|None=None, xaxis_reverse: bool=False,
                 ylims: Tuple[int, int]|None=None, xlims: Tuple[int, int]|None=None,
-                title: str|None=None, linewidth: float|None=None,
+                title: str|None=None, linewidth: float|None=None, yscale: str='linear',
                 colors: list[str]|None=None):
     """Plot utility with various options"""
     #
@@ -54,6 +54,8 @@ def plot_custom(x_y_data_tuples: list[Tuple], figsize: Tuple[int, int]=(10, 3),
     #
     if xaxis_reverse:
         axis.invert_xaxis()
+    #
+    axis.set_yscale(yscale)
     #
     plt.show()
 
